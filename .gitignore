@@ -1,0 +1,54 @@
+# --- Node / Next.js ---
+node_modules/
+.next/
+.turbo/
+dist/
+build/
+out/
+*.tsbuildinfo
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Python / FastAPI ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.uv/
+
+# --- Environment / Secrets ---
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# --- Supabase ---
+supabase/.branches/
+supabase/.temp/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Editors ---
+.vscode/
+.idea/
+*.swp
+
+# --- Coverage / Logs ---
+coverage/
+*.log
+
+# --- Claude (local-only settings) ---
+.claude/settings.local.json
