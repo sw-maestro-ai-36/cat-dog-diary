@@ -40,7 +40,7 @@ ADR-0006 (β JWT forward), ADR-0007 (Y-2 영속화), ADR-0008 (BFF API), ADR-000
 - `honorific` 자유 입력 1~20자.
 - **`gender`** enum 3개 (`'male' | 'female' | 'unknown'`), `NOT NULL DEFAULT 'unknown'`. 카드 표시(♂/♀/—) + LLM 시스템 프롬프트 메타로 inject. 톤 분기 X (species 분기로 충분).
 - **soft delete (`deleted_at`)** — 자식 diaries 보존을 위해. RLS SELECT에 `deleted_at is null` 포함.
-- 펫 사진 컬럼 X — 최근 일기 사진을 썸네일 fallback. 종 이모지 fallback.
+- 펫 사진 컬럼 X — 펫 row 헤더 좌측은 종 이모지(🐱/🐶/🐾)만 표시(자유 입력 `species`를 클라이언트에서 매핑, ADR-0013 §종 이모지 매핑). 최근 일기 사진은 row 캐러셀의 일기 카드에서만 노출.
 
 #### diaries
 - `source_generation_id` UNIQUE — 어떤 generation을 채택했나.
