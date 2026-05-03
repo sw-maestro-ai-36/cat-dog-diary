@@ -37,6 +37,7 @@ ADR-0006 (β JWT forward), ADR-0007 (Y-2 영속화), ADR-0008 (BFF API), ADR-000
 #### pets
 - `species` **자유 입력 1~20자** — cat/dog 톤 분기는 prompt layer + `.claude/rules/tone-guide.md`에서 처리 (D + 3-layer).
 - `honorific` 자유 입력 1~20자.
+- **`gender`** enum 3개 (`'male' | 'female' | 'unknown'`), `NOT NULL DEFAULT 'unknown'`. 카드 표시(♂/♀/—) + LLM 시스템 프롬프트 메타로 inject. 톤 분기 X (species 분기로 충분).
 - **soft delete (`deleted_at`)** — 자식 diaries 보존을 위해. RLS SELECT에 `deleted_at is null` 포함.
 - 펫 사진 컬럼 X — 최근 일기 사진을 썸네일 fallback. 종 이모지 fallback.
 
@@ -51,7 +52,7 @@ ADR-0006 (β JWT forward), ADR-0007 (Y-2 영속화), ADR-0008 (BFF API), ADR-000
 #### diary_generations
 - `session_id` UUID 묶음 (별도 `diary_sessions` 테이블 X).
 - `(session_id, seq)` UNIQUE, `seq smallint check (between 1 and 4)`.
-- 입력 snapshot 컬럼: `photo_path`, `keywords(1~1000)`, **`honorific_used`**, **`species_used`** (`pets` 변경 후에도 그 시점 추적).
+- 입력 snapshot 컬럼: `photo_path`, `keywords(1~1000)`, **`honorific_used`**, **`species_used`**, **`gender_used`** (`pets` 변경 후에도 그 시점 추적).
 - **`regen_feedback`** text NULL 허용 1~500자. seq=1은 NULL, 그 외는 사용자 피드백 (선택).
 - LLM 입력에는 직전 generation 1개만 inject (토큰 안정성).
 - `is_adopted` 플래그 X — `diaries.source_generation_id` 역참조.

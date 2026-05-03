@@ -53,6 +53,7 @@ POST /diary/generate
     keywords,
     honorific,          # BFF가 pets에서 fetch
     species,            # BFF가 pets에서 fetch
+    gender,             # 'male' | 'female' | 'unknown'
     recent_diaries      # BFF가 diaries에서 fetch (최근 3개 diary_text)
   }
   Response: { diary_text, short_caption, mood_tag }
@@ -67,6 +68,7 @@ POST /diary/regenerate
     keywords,
     honorific,
     species,
+    gender,
     recent_diaries,
     previous_diary_text,
     feedback?           # 1~500자 자유 텍스트, NULL 허용

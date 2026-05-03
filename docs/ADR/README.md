@@ -18,6 +18,7 @@
 | [0010](0010-data-model-and-rls.md) | 데이터 모델과 RLS 정책 — 5 테이블 + β 단일 패턴 | Accepted | 2026-05-03 |
 | [0011](0011-ai-gateway-hosting.md) | AI Gateway 호스팅과 외부 노출 차단 — Railway us-east4 + 공유 비밀 헤더 | Accepted | 2026-05-03 |
 | [0012](0012-observability.md) | 관측성 — LangSmith trace + 호스팅 기본 로그 | Accepted | 2026-05-03 |
+| [0013](0013-ui-routing-and-design-system.md) | UI 라우팅 + 메인 구조 + 디자인 시스템 — 4 라우트 + 펫별 row + shadcn/ui | Accepted | 2026-05-03 |
 
 ## 작성 규칙
 

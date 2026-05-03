@@ -104,6 +104,7 @@ class DiaryState(TypedDict):
     pet_id: str
     honorific: str
     species: str
+    gender: Literal['male', 'female', 'unknown']
     photo_signed_url: str
     keywords: str
     recent_diaries: list[str]                     # 최근 3개 diary_text
