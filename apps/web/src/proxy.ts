@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PREFIXES = ["/login", "/auth"];
+// /api는 fetch 호출 — JSON 401(route handler가 반환)이 자연. redirect로 가로채면 클라이언트가 HTML 응답 받음.
+const API_PREFIX = "/api";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -34,8 +36,9 @@ export async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PREFIXES.some((p) => path.startsWith(p));
+  const isApi = path.startsWith(API_PREFIX);
 
-  if (!user && !isPublic) {
+  if (!user && !isPublic && !isApi) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

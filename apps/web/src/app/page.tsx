@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -16,13 +17,17 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // proxy.ts가 미인증 시 redirect하지만, 이중 가드.
   if (!user) {
     redirect("/login");
   }
 
+  const { data: pets } = await supabase
+    .from("pets")
+    .select("id, name, species, honorific, gender")
+    .order("created_at", { ascending: true });
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
+    <main className="flex flex-1 flex-col items-center gap-8 p-8">
       <div className="flex flex-col items-center gap-2 text-center">
         <span className="text-5xl">🐱🐶</span>
         <h1 className="text-3xl font-semibold tracking-tight">냥멍일기</h1>
@@ -33,16 +38,57 @@ export default async function Home() {
 
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>로그인 확인</CardTitle>
+          <CardTitle>내 펫 ({pets?.length ?? 0})</CardTitle>
           <CardDescription>
-            Phase 4-B 검증용. Phase 4-D에서 메인(펫 row)으로 교체.
+            Phase 4-C 검증용 — 4-D에서 row × 캐러셀로 교체.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          <p className="text-sm">
-            <span className="text-muted-foreground">이메일</span>{" "}
-            <span className="font-medium">{user.email}</span>
-          </p>
+          {pets && pets.length > 0 ? (
+            <ul className="flex flex-col gap-2">
+              {pets.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 text-sm"
+                >
+                  <span>
+                    <strong>{p.name}</strong>{" "}
+                    <span className="text-muted-foreground">
+                      · {p.species} · {p.honorific} ·{" "}
+                      {p.gender === "male"
+                        ? "♂"
+                        : p.gender === "female"
+                          ? "♀"
+                          : "?"}
+                    </span>
+                  </span>
+                  <Link
+                    href={`/pets/${p.id}/edit`}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    수정
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              아직 펫이 없어요. 새로 추가해보세요.
+            </p>
+          )}
+
+          <Link
+            href="/pets/new"
+            className={buttonVariants({ size: "lg", className: "w-full" })}
+          >
+            + 새 펫 추가
+          </Link>
+        </CardContent>
+      </Card>
+
+      <Card className="w-full max-w-md">
+        <CardContent className="flex items-center justify-between gap-3 py-4">
+          <span className="text-sm text-muted-foreground">{user.email}</span>
           <SignOutButton />
         </CardContent>
       </Card>
