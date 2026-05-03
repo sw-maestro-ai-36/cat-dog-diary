@@ -1,93 +1,75 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Pet } from "@cat-dog-diary/shared-types";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { EmptyStateCard } from "@/components/empty-state-card";
+import { PetRow } from "@/components/pet-row";
+import { listDiariesForPet } from "@/lib/server/diaries";
+import { getUsageToday } from "@/lib/server/usage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SignOutButton } from "./sign-out-button";
+
+const PET_FIELDS =
+  "id, name, species, honorific, gender, created_at, updated_at";
+const ROW_DIARY_LIMIT = 12;
 
 export default async function Home() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  if (!user) {
-    redirect("/login");
-  }
-
-  const { data: pets } = await supabase
+  const { data: petsData, error: petsError } = await supabase
     .from("pets")
-    .select("id, name, species, honorific, gender")
+    .select(PET_FIELDS)
     .order("created_at", { ascending: true });
+  if (petsError) throw petsError;
+
+  const pets = (petsData ?? []) as Pet[];
+
+  const [usage, ...rows] = await Promise.all([
+    getUsageToday(supabase),
+    ...pets.map((p) =>
+      listDiariesForPet(supabase, { petId: p.id, limit: ROW_DIARY_LIMIT }),
+    ),
+  ]);
 
   return (
-    <main className="flex flex-1 flex-col items-center gap-8 p-8">
-      <div className="flex flex-col items-center gap-2 text-center">
-        <span className="text-5xl">🐱🐶</span>
-        <h1 className="text-3xl font-semibold tracking-tight">냥멍일기</h1>
-        <p className="text-muted-foreground">
-          사진 한 장에서 시작하는 반려동물 1인칭 일기
-        </p>
-      </div>
-
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>내 펫 ({pets?.length ?? 0})</CardTitle>
-          <CardDescription>
-            Phase 4-C 검증용 — 4-D에서 row × 캐러셀로 교체.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {pets && pets.length > 0 ? (
-            <ul className="flex flex-col gap-2">
-              {pets.map((p) => (
-                <li
-                  key={p.id}
-                  className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 text-sm"
-                >
-                  <span>
-                    <strong>{p.name}</strong>{" "}
-                    <span className="text-muted-foreground">
-                      · {p.species} · {p.honorific} ·{" "}
-                      {p.gender === "male"
-                        ? "♂"
-                        : p.gender === "female"
-                          ? "♀"
-                          : "?"}
-                    </span>
-                  </span>
-                  <Link
-                    href={`/pets/${p.id}/edit`}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    수정
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              아직 펫이 없어요. 새로 추가해보세요.
-            </p>
-          )}
-
+    <main className="flex flex-1 flex-col items-center gap-8 p-6 pb-12">
+      <header className="flex w-full max-w-3xl items-center justify-between">
+        <Link href="/" className="flex items-center gap-2">
+          <span className="text-2xl">🐱🐶</span>
+          <span className="text-lg font-semibold tracking-tight">냥멍일기</span>
+        </Link>
+        {pets.length > 0 ? (
           <Link
             href="/pets/new"
-            className={buttonVariants({ size: "lg", className: "w-full" })}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
           >
             + 새 펫 추가
           </Link>
-        </CardContent>
-      </Card>
+        ) : null}
+      </header>
+
+      {pets.length === 0 ? (
+        <EmptyStateCard />
+      ) : (
+        <div className="flex w-full flex-col items-center gap-8">
+          {pets.map((pet, i) => (
+            <PetRow
+              key={pet.id}
+              pet={pet}
+              diaries={rows[i].items}
+              newRemaining={usage.new_remaining}
+            />
+          ))}
+        </div>
+      )}
 
       <Card className="w-full max-w-md">
-        <CardContent className="flex items-center justify-between gap-3 py-4">
+        <CardContent className="flex items-center justify-between gap-3 py-3">
           <span className="text-sm text-muted-foreground">{user.email}</span>
           <SignOutButton />
         </CardContent>
