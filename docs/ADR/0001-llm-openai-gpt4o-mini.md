@@ -19,8 +19,8 @@
 
 **OpenAI GPT-4o-mini를 메인 LLM으로 채택한다.** (`gpt-4o-mini`)
 
-- 일기 생성, 사진 분석, 안전성 사전 분류 모두 동일 모델 사용
-- 안전성 최종 검증은 OpenAI Moderation API (별도 무료)
+- 일기 생성, 사진 분석을 단일 모델로 통합 (Vision + structured outputs 1회 호출)
+- 안전성 검증은 ADR-0005 부록의 deterministic check (호칭 substring + 길이)으로 처리. **OpenAI Moderation API는 MVP 미사용** — 미래 PII/abuse Reflection 또는 Validation Agent 단계에서 통합
 
 ## Rationale
 

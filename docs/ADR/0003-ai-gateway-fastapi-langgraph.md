@@ -69,3 +69,14 @@ Next.js BFF가 HMAC 서명으로 Gateway를 호출.
 - BFF↔Gateway 인증: HMAC + IP allowlist (가능 시) — `apps/ai-gateway/app/auth.py`
 - LangSmith 워크스페이스 + API 키 시크릿 관리
 - 그래프 노드 추가 시 `add-langgraph-node` 스킬 정의 (반복 절차)
+
+---
+
+## 부록 — 후속 ADR로 갱신 (2026-05-03)
+
+본 ADR의 다음 결정은 후속 ADR로 정합 갱신됨. 본문은 결정 변천사로 보존:
+
+- **BFF↔Gateway 인증 (HMAC)** → ADR-0006(β: 사용자 JWT forward + RLS 자동) + ADR-0011(`X-Internal-Secret` 공유 비밀 헤더)으로 superseded. HMAC 방식은 채택되지 않음 (ADR-0006 Alternative α 탈락).
+- **호스팅 미정 (Fly.io 또는 Railway, 트래픽 패턴 보고)** → ADR-0011(Railway us-east4)로 확정.
+- **LangSmith 워크스페이스 시크릿 관리** → ADR-0012에서 정식 결정 (Developer Free, 카드 미등록).
+- **`add-langgraph-node` 스킬 정의** → MVP 외, 미래 작업.
