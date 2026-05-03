@@ -44,7 +44,10 @@ pnpm --filter web build            # Next.js prod build (TS check 포함)
 ```bash
 uv sync --directory apps/ai-gateway                                        # venv + deps
 uv run --directory apps/ai-gateway python -c "from ai_gateway.main import app"  # import sanity
+uv run --directory apps/ai-gateway uvicorn ai_gateway.main:app --host 127.0.0.1 --port 8765  # dev 서버
 ```
+
+`.env.local`은 root에 두고 ai-gateway가 자동 로드 (config.py가 monorepo root까지 탐색). 필요 env: `INTERNAL_SHARED_SECRET`, `OPENAI_API_KEY`, `SUPABASE_URL`(또는 `NEXT_PUBLIC_SUPABASE_URL`), `LANGSMITH_API_KEY` (PAT 권장 — `feedback_langsmith_pat.md` 참조), `LANGSMITH_TRACING=true`.
 
 ### Supabase (CLI는 `pnpm dlx supabase`로 호출, root에서)
 ```bash
