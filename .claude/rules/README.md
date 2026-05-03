@@ -6,7 +6,10 @@
 ## 작성된 룰
 
 - `git-commit.md` — 커밋 메시지 컨벤션 (`<type>: 한국어 한 줄`, scope/perf/Co-Author 미사용)
-- `tone-guide.md` — 1인칭 일기 톤 가이드 (cat/dog/other 3섹션 + §0 공통). prompt에 species 분기로 1섹션만 inject
+
+## 다른 위치로 이동된 룰
+
+- 톤 가이드 → `apps/ai-gateway/src/ai_gateway/prompts/diary_v1/tone_guide.md` (prompt template과 함께 런타임 패키지로 이동, Phase 3-C-1)
 
 ## 예정 파일 (Phase 0 진행하며 채움)
 
