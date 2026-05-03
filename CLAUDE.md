@@ -40,6 +40,10 @@ pnpm --filter web dev              # Next.js dev 서버
 pnpm --filter web build            # Next.js prod build (TS check 포함)
 ```
 
+### web (Next.js)
+
+`apps/web/.env.local`은 Next.js가 cwd 기준으로 자동 로드 (root `.env.local`과 분리, 변경 시 둘 다 sync). 필요 env: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `INTERNAL_SHARED_SECRET`, `AI_GATEWAY_URL` (dev: `http://127.0.0.1:8765`, prod: Railway URL은 Vercel에 등록).
+
 ### ai-gateway (Python + uv)
 ```bash
 uv sync --directory apps/ai-gateway                                        # venv + deps
