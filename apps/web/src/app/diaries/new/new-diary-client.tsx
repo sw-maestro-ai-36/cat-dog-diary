@@ -272,7 +272,6 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
   return (
     <form onSubmit={handleGenerate} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="photo">사진</Label>
         <input
           id="photo"
           type="file"
