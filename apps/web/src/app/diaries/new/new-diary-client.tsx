@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { MoodTag, Pet } from "@cat-dog-diary/shared-types";
@@ -17,6 +17,7 @@ import {
   PhotoUploadError,
   uploadPetPhoto,
 } from "@/lib/storage/upload";
+import { cn } from "@/lib/utils";
 
 type Step = "input" | "loading" | "result";
 
@@ -36,7 +37,6 @@ interface NewDiaryClientProps {
 
 export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps) {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("input");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -46,28 +46,48 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
   const [feedback, setFeedback] = useState("");
   const [showFeedback, setShowFeedback] = useState(false);
   const [adopting, setAdopting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     if (!previewUrl) return;
     return () => URL.revokeObjectURL(previewUrl);
   }, [previewUrl]);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
+  function processFile(f: File) {
     if (!ALLOWED_MIME.includes(f.type as (typeof ALLOWED_MIME)[number])) {
       toast.error("JPG 또는 PNG만 지원해요");
-      e.target.value = "";
       return;
     }
     if (f.size > MAX_PHOTO_SIZE) {
       toast.error("사진은 10MB 이하여야 해요");
-      e.target.value = "";
       return;
     }
     setFile(f);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(URL.createObjectURL(f));
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) processFile(f);
+    e.target.value = "";
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) processFile(f);
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    if (!isDragging) setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
   }
 
   async function handleGenerate(e: React.FormEvent) {
@@ -254,25 +274,37 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
       <div className="flex flex-col gap-2">
         <Label htmlFor="photo">사진</Label>
         <input
-          ref={fileInputRef}
           id="photo"
           type="file"
           accept={ALLOWED_MIME.join(",")}
           onChange={handleFileChange}
-          className="text-sm"
+          className="sr-only"
         />
-        {previewUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={previewUrl}
-            alt="미리보기"
-            className="aspect-square w-full rounded-xl bg-muted object-cover"
-          />
-        ) : (
-          <div className="flex aspect-square w-full items-center justify-center rounded-xl bg-muted/40 text-sm text-muted-foreground">
-            사진을 선택해주세요 (JPG/PNG, 10MB 이하)
-          </div>
-        )}
+        <label
+          htmlFor="photo"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={cn(
+            "flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-muted/40 ring-1 ring-foreground/10 transition hover:bg-muted/60 focus-within:ring-2 focus-within:ring-primary",
+            isDragging && "bg-primary/5 ring-2 ring-primary",
+          )}
+        >
+          {previewUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl}
+              alt="미리보기"
+              draggable={false}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-1 text-center text-sm text-muted-foreground">
+              <span>클릭하거나 사진을 끌어다 놓으세요</span>
+              <span className="text-xs">JPG/PNG · 10MB 이하</span>
+            </div>
+          )}
+        </label>
       </div>
 
       <div className="flex flex-col gap-2">
