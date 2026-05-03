@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  transpilePackages: ["@cat-dog-diary/shared-types"],
 };
 
 export default nextConfig;
