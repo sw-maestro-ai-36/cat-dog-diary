@@ -73,6 +73,25 @@ ADR-0006~0012로 백엔드·데이터·인프라 결정 완료. 프론트엔드 
 
 미인증 시 모든 인증 라우트는 `/login` redirect.
 
+## 데이터 로딩 흐름
+
+### 메인 (`/`) 진입 시
+1. GET `/api/pets` → 펫 목록 (alive만)
+2. 각 펫마다 병렬 GET `/api/diaries?petId=&limit=N` → row 가로 캐러셀 데이터
+3. GET `/api/usage/today` → 오늘 신규 잔여 횟수 (펫 row의 `+ 일기` 카드 disable 판단)
+
+펫이 N개면 호출 N+2회. **MVP 스케일(펫 1~3)에선 무방.** 미래 펫 수 늘거나 latency 이슈 시 통합 endpoint(`GET /api/feed`) 도입 ADR.
+
+### 한도 도달 처리
+- `new_remaining = 0`이면 메인 모든 펫 row의 `+ 일기` 카드 **disable + 회색** 처리. 클릭 시 토스트: *"오늘 새 일기 한도(5회)를 모두 썼어요. 자정에 초기화돼요."*
+- `/diaries/new?pet_id=xxx` 직접 진입 시도도 같은 검증 → `/` redirect + 동일 토스트.
+- 재생성 한도(세션당 3회) 도달은 `/diaries/new` 페이지 안에서 "다시 만들기" 버튼 disable + 안내 텍스트.
+
+### 종 이모지 fallback 매핑
+- `species` 자유 입력 → 클라이언트에서 `normalizeSpecies(text) → 🐱 | 🐶 | 🐾` 매핑.
+- 단순 substring/keyword 매칭: "고양이"·"cat"·"냥이" → 🐱, "강아지"·"dog"·"멍멍이" → 🐶, 그 외 → 🐾.
+- 매핑 함수는 구현 시점 자유 확장 가능. 본 ADR은 정책만 명시.
+
 ## Alternatives Considered
 
 - **5라우트 (`/settings` 별도 페이지)** — 닉네임 1개에 페이지 1개는 낭비.

@@ -13,15 +13,15 @@ ADR-0007(Y-2 영속화) 위에서 BFF가 클라이언트에 노출할 endpoint�
 
 | Method | Path | Body | 책임 |
 |---|---|---|---|
-| POST | `/api/diaries/generate` | `{ pet_id, photo_path, keywords }` | 첫 생성 — BFF가 새 `session_id` 발급, signed URL 발급 후 Gateway forward, `diary_generations` INSERT (seq=1), `usage_quotas` UPSERT |
-| POST | `/api/diaries/regenerate` | `{ session_id, pet_id, photo_path, keywords, feedback?: string(1~500) }` | 재생성 — 다음 seq 결정, 재생성 한도 검증, 직전 generation 1개 Gateway forward, INSERT |
+| POST | `/api/diaries/generate` | `{ pet_id, photo_path, keywords }` | 첫 생성 — BFF가 새 `session_id` 발급, `pets`에서 `honorific/species/gender` fetch, `diaries`에서 최근 3개 fetch, signed URL 발급 후 Gateway forward, `diary_generations` INSERT (seq=1, snapshot 포함), `usage_quotas` UPSERT |
+| POST | `/api/diaries/regenerate` | `{ session_id, pet_id, photo_path, keywords, feedback?: string(1~500) }` | 재생성 — 다음 seq 결정, 재생성 한도 검증, `pets`에서 메타 fetch (snapshot 갱신), 직전 generation 1개 + Gateway forward, INSERT |
 | POST | `/api/diaries` | `{ source_generation_id }` | 채택 — generation에서 복사해 `diaries` INSERT |
 | DELETE | `/api/diaries/:id` | – | 일기 hard delete + same-session generations 동반 + storage object 삭제 (BFF 트랜잭션 best-effort) |
-| GET | `/api/diaries?petId=&cursor=&limit=` | – | 피드 (cursor pagination) |
+| GET | `/api/diaries?petId=&cursor=&limit=` | – | 피드 (cursor pagination). 메인은 펫별 row이므로 클라이언트가 펫마다 호출 (펫 수만큼 N개) |
 | GET | `/api/usage/today` | – | 오늘 신규 잔여 횟수 |
-| POST | `/api/pets` | `{ name, species, honorific }` | 펫 등록 |
+| POST | `/api/pets` | `{ name, species, honorific, gender }` | 펫 등록 |
 | GET | `/api/pets` | – | 본인 펫 목록 (alive만) |
-| PATCH | `/api/pets/:id` | `{ name?, species?, honorific? }` | 펫 정보 수정 |
+| PATCH | `/api/pets/:id` | `{ name?, species?, honorific?, gender? }` | 펫 정보 수정 |
 | DELETE | `/api/pets/:id` | – | 펫 soft delete (`deleted_at = now()` UPDATE, 자식 일기는 보존) |
 | PATCH | `/api/profile` | `{ display_name }` | 닉네임 변경 |
 
