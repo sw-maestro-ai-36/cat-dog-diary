@@ -31,6 +31,43 @@ apps/{web,ai-gateway}/   packages/shared-types/   supabase/{migrations,seed.sql}
 
 각 `apps/*/CLAUDE.md`는 그 디렉토리 작업 시 자동 로드 (구현 시 채움).
 
-## 명령어 (구현 후 채움)
+## 명령어
 
-구현 시작 후 채울 것.
+### 모노레포 / 의존성
+```bash
+pnpm install                       # 모든 workspace 의존성 (root에서)
+pnpm --filter web dev              # Next.js dev 서버
+pnpm --filter web build            # Next.js prod build (TS check 포함)
+```
+
+### ai-gateway (Python + uv)
+```bash
+uv sync --directory apps/ai-gateway                                        # venv + deps
+uv run --directory apps/ai-gateway python -c "from ai_gateway.main import app"  # import sanity
+```
+
+### Supabase (CLI는 `pnpm dlx supabase`로 호출, root에서)
+```bash
+pnpm dlx supabase start                          # 로컬 stack (Docker Desktop 실행 중이어야)
+pnpm dlx supabase stop --no-backup               # 정리
+pnpm dlx supabase db reset --local               # 마이그레이션만으로 DB 재구성
+pnpm dlx supabase db advisors --local            # 로컬 advisor (보안/성능 lint)
+pnpm dlx supabase db pull <name> --local --yes   # iterate 후 마이그레이션 파일 생성
+```
+
+### dev 환경 push (env 자동 로드)
+```bash
+set -a; source .env.local; set +a; pnpm dlx supabase db push --yes -p "$SUPABASE_DB_PASSWORD"
+set -a; source .env.local; set +a; pnpm dlx supabase db advisors --linked
+```
+
+### Postgres 직접 접근 (로컬 컨테이너 안)
+```bash
+docker exec -i supabase_db_cat-dog-diary psql -U postgres -d postgres <<'EOF'
+<SQL>
+EOF
+```
+
+### Windows 환경 주의
+- Docker Desktop 실행 중이어야 `supabase start` 동작
+- `supabase/config.toml`에서 `[analytics] enabled = false` (Windows에서 storage health check 통과 위해)
