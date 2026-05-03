@@ -35,6 +35,7 @@ ADR-0006 (β JWT forward), ADR-0007 (Y-2 영속화), ADR-0008 (BFF API), ADR-000
 - 이메일 컬럼 미도입 — `auth.users.email`을 클라이언트가 `supabase.auth.getUser()`로 직접.
 
 #### pets
+- `name` **자유 입력 1~20자**, trim.
 - `species` **자유 입력 1~20자** — cat/dog 톤 분기는 prompt layer + `.claude/rules/tone-guide.md`에서 처리 (D + 3-layer).
 - `honorific` 자유 입력 1~20자.
 - **`gender`** enum 3개 (`'male' | 'female' | 'unknown'`), `NOT NULL DEFAULT 'unknown'`. 카드 표시(♂/♀/—) + LLM 시스템 프롬프트 메타로 inject. 톤 분기 X (species 분기로 충분).
