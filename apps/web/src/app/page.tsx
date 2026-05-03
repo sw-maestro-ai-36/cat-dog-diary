@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -6,8 +7,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { SignOutButton } from "./sign-out-button";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // proxy.ts가 미인증 시 redirect하지만, 이중 가드.
+  if (!user) {
+    redirect("/login");
+  }
+
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
       <div className="flex flex-col items-center gap-2 text-center">
@@ -20,19 +33,17 @@ export default function Home() {
 
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>디자인 토큰 확인</CardTitle>
+          <CardTitle>로그인 확인</CardTitle>
           <CardDescription>
-            베이지 배경 · 오렌지 primary · 분홍 accent · radius 1rem · Pretendard
+            Phase 4-B 검증용. Phase 4-D에서 메인(펫 row)으로 교체.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          <Button>기본 (오렌지)</Button>
-          <Button variant="secondary">보조</Button>
-          <Button variant="outline">아웃라인</Button>
-          <Button variant="ghost">고스트</Button>
-          <Button className="bg-accent text-accent-foreground hover:bg-accent/80">
-            분홍 accent
-          </Button>
+        <CardContent className="flex flex-col gap-3">
+          <p className="text-sm">
+            <span className="text-muted-foreground">이메일</span>{" "}
+            <span className="font-medium">{user.email}</span>
+          </p>
+          <SignOutButton />
         </CardContent>
       </Card>
     </main>
