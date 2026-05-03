@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -51,7 +52,9 @@ export function HeaderUserMenu({ displayName, email }: HeaderUserMenuProps) {
           <ChevronDownIcon data-icon="inline-end" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-48">
-          <DropdownMenuLabel className="truncate">{email}</DropdownMenuLabel>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="truncate">{email}</DropdownMenuLabel>
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setEditOpen(true)}>
             닉네임 변경
