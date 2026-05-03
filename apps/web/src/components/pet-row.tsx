@@ -3,6 +3,7 @@ import type { Diary, Pet } from "@cat-dog-diary/shared-types";
 import { cn } from "@/lib/utils";
 import { normalizeSpecies } from "@/lib/species";
 import { DiaryCard } from "@/components/diary-card";
+import { PetRowMenu } from "@/components/pet-row-menu";
 
 interface PetRowProps {
   pet: Pet;
@@ -34,14 +35,7 @@ export function PetRow({ pet, diaries, newRemaining }: PetRowProps) {
             {genderMark ? ` · ${genderMark}` : ""}
           </span>
         </div>
-        {/* 4-D-2에서 dropdown-menu로 교체. 지금은 "수정" 직링크만. */}
-        <Link
-          href={`/pets/${pet.id}/edit`}
-          className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-          aria-label={`${pet.name} 수정`}
-        >
-          ⋯
-        </Link>
+        <PetRowMenu petId={pet.id} petName={pet.name} />
       </header>
 
       <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">

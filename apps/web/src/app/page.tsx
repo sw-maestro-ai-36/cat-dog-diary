@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import type { Pet } from "@cat-dog-diary/shared-types";
+import type { Pet, Profile } from "@cat-dog-diary/shared-types";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { EmptyStateCard } from "@/components/empty-state-card";
+import { HeaderUserMenu } from "@/components/header-user-menu";
 import { PetRow } from "@/components/pet-row";
 import { listDiariesForPet } from "@/lib/server/diaries";
 import { getUsageToday } from "@/lib/server/usage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { SignOutButton } from "./sign-out-button";
 
 const PET_FIELDS =
   "id, name, species, honorific, gender, created_at, updated_at";
@@ -21,13 +20,23 @@ export default async function Home() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: petsData, error: petsError } = await supabase
-    .from("pets")
-    .select(PET_FIELDS)
-    .order("created_at", { ascending: true });
+  const [{ data: petsData, error: petsError }, { data: profileData }] =
+    await Promise.all([
+      supabase
+        .from("pets")
+        .select(PET_FIELDS)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("profiles")
+        .select("display_name, updated_at")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
   if (petsError) throw petsError;
 
   const pets = (petsData ?? []) as Pet[];
+  const profile = (profileData ?? null) as Profile | null;
+  const displayName = profile?.display_name ?? user.email ?? "사용자";
 
   const [usage, ...rows] = await Promise.all([
     getUsageToday(supabase),
@@ -43,14 +52,17 @@ export default async function Home() {
           <span className="text-2xl">🐱🐶</span>
           <span className="text-lg font-semibold tracking-tight">냥멍일기</span>
         </Link>
-        {pets.length > 0 ? (
-          <Link
-            href="/pets/new"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            + 새 펫 추가
-          </Link>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {pets.length > 0 ? (
+            <Link
+              href="/pets/new"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              + 새 펫 추가
+            </Link>
+          ) : null}
+          <HeaderUserMenu displayName={displayName} email={user.email ?? ""} />
+        </div>
       </header>
 
       {pets.length === 0 ? (
@@ -67,13 +79,6 @@ export default async function Home() {
           ))}
         </div>
       )}
-
-      <Card className="w-full max-w-md">
-        <CardContent className="flex items-center justify-between gap-3 py-3">
-          <span className="text-sm text-muted-foreground">{user.email}</span>
-          <SignOutButton />
-        </CardContent>
-      </Card>
     </main>
   );
 }
