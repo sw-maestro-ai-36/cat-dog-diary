@@ -16,7 +16,7 @@ export default function NewPetPage() {
 
   return (
     <main className="flex flex-1 items-center justify-center p-8">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>새 펫 추가</CardTitle>
           <CardDescription>

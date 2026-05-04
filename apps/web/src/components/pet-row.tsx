@@ -23,14 +23,14 @@ export function PetRow({ pet, diaries, newRemaining }: PetRowProps) {
   const canCreate = newRemaining > 0;
 
   return (
-    <section className="flex w-full max-w-3xl flex-col gap-2">
-      <header className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
-          <span className="text-xl" aria-hidden>
+    <section className="flex w-full flex-col gap-4">
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl" aria-hidden>
             {emoji}
           </span>
-          <h2 className="text-base font-semibold">{pet.name}</h2>
-          <span className="text-sm text-muted-foreground">
+          <h2 className="text-2xl font-semibold tracking-tight">{pet.name}</h2>
+          <span className="text-base text-muted-foreground">
             {pet.honorific}
             {genderMark ? ` · ${genderMark}` : ""}
           </span>
@@ -38,7 +38,7 @@ export function PetRow({ pet, diaries, newRemaining }: PetRowProps) {
         <PetRowMenu petId={pet.id} petName={pet.name} />
       </header>
 
-      <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+      <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 [scrollbar-width:thin]">
         <NewDiaryCard petId={pet.id} disabled={!canCreate} />
         {diaries.map((d) => (
           <DiaryCard key={d.id} diary={d} />
@@ -56,20 +56,20 @@ function NewDiaryCard({
   disabled: boolean;
 }) {
   const baseClass =
-    "flex w-40 shrink-0 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed text-sm font-medium transition-colors aspect-square";
+    "flex w-56 shrink-0 flex-col items-center justify-center gap-3 rounded-2xl border text-sm font-medium aspect-square";
 
   if (disabled) {
     return (
       <div
         className={cn(
           baseClass,
-          "cursor-not-allowed border-border/60 bg-muted/30 text-muted-foreground/60",
+          "cursor-not-allowed border-border/30 bg-muted/30 text-muted-foreground/50",
         )}
         aria-disabled
         title="오늘 새 일기 한도(5회)를 모두 썼어요. 자정에 초기화돼요."
       >
-        <span className="text-3xl leading-none">+</span>
-        <span className="text-xs">오늘 한도 끝</span>
+        <span className="text-6xl leading-none">+</span>
+        <span className="text-sm">오늘 한도 끝</span>
       </div>
     );
   }
@@ -79,11 +79,11 @@ function NewDiaryCard({
       href={{ pathname: "/diaries/new", query: { pet_id: petId } }}
       className={cn(
         baseClass,
-        "border-border bg-background text-foreground hover:border-primary hover:bg-primary/5 hover:text-primary",
+        "border-border/40 bg-muted/30 text-foreground transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-card hover:text-primary hover:shadow-md",
       )}
     >
-      <span className="text-3xl leading-none">+</span>
-      <span className="text-xs">새 일기</span>
+      <span className="text-6xl leading-none">+</span>
+      <span className="text-sm">새 일기</span>
     </Link>
   );
 }

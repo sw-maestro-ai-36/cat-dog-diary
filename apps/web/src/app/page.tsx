@@ -46,29 +46,35 @@ export default async function Home() {
   ]);
 
   return (
-    <main className="flex flex-1 flex-col items-center gap-8 p-6 pb-12">
-      <header className="flex w-full max-w-3xl items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-2xl">🐱🐶</span>
-          <span className="text-lg font-semibold tracking-tight">냥멍일기</span>
-        </Link>
-        <div className="flex items-center gap-2">
-          {pets.length > 0 ? (
-            <Link
-              href="/pets/new"
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-            >
-              + 새 펫 추가
-            </Link>
-          ) : null}
-          <HeaderUserMenu displayName={displayName} email={user.email ?? ""} />
+    <main className="flex flex-1 flex-col">
+      <header className="sticky top-0 z-10 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <Link href="/" className="flex shrink-0 items-center gap-2 whitespace-nowrap">
+            <span className="text-2xl">🐱🐶</span>
+            <span className="text-lg font-semibold tracking-tight">냥멍일기</span>
+          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            {pets.length > 0 ? (
+              <Link
+                href="/pets/new"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+                aria-label="새 펫 추가"
+              >
+                <span className="hidden sm:inline">+ 새 펫 추가</span>
+                <span className="text-base sm:hidden">+</span>
+              </Link>
+            ) : null}
+            <HeaderUserMenu displayName={displayName} email={user.email ?? ""} />
+          </div>
         </div>
       </header>
 
       {pets.length === 0 ? (
-        <EmptyStateCard />
+        <div className="flex flex-1 items-center justify-center px-4 py-16 sm:px-6">
+          <EmptyStateCard />
+        </div>
       ) : (
-        <div className="flex w-full flex-col items-center gap-8">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-4 py-12 sm:px-6">
           {pets.map((pet, i) => (
             <PetRow
               key={pet.id}

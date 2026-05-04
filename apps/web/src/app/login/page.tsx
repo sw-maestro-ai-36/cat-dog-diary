@@ -33,17 +33,17 @@ export default function LoginPage() {
 
   return (
     <main className="flex flex-1 items-center justify-center p-8">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-md">
         <CardHeader>
-          <div className="flex flex-col items-center gap-2 text-center">
-            <span className="text-4xl">🐱🐶</span>
-            <CardTitle className="text-2xl">냥멍일기</CardTitle>
-            <CardDescription>
+          <div className="flex flex-col items-center gap-3 pt-4 text-center">
+            <span className="text-6xl">🐱🐶</span>
+            <CardTitle className="text-3xl">냥멍일기</CardTitle>
+            <CardDescription className="text-base">
               사진 한 장에서 시작하는 반려동물 1인칭 일기
             </CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
+        <CardContent className="flex flex-col gap-3 pb-6">
           <Button
             onClick={signInWithGoogle}
             disabled={loading}

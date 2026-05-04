@@ -44,41 +44,50 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* 냥멍일기 베이지/크림 톤 (ADR-0013 부록 정합).
+/* 냥멍일기 톤 — Mocha Mousse(Pantone 2025) + Peach Fuzz(Pantone 2024) 어스톤.
    다크모드 토큰 미포함 — MVP 라이트만. */
 :root {
-  --background: #f5efe6;
-  --foreground: #2a1f14;
-  --card: #fffcf7;
-  --card-foreground: #2a1f14;
-  --popover: #fffcf7;
-  --popover-foreground: #2a1f14;
-  --primary: #e8995c;
+  --background: #f4ece1;
+  --foreground: #2d2018;
+  --card: #fffaf3;
+  --card-foreground: #2d2018;
+  --popover: #fffaf3;
+  --popover-foreground: #2d2018;
+  --primary: #946652;        /* Mocha Mousse */
   --primary-foreground: #ffffff;
-  --secondary: #e0d2b8;
-  --secondary-foreground: #2a1f14;
-  --muted: #ece2d0;
-  --muted-foreground: #7a6c58;
-  --accent: #f2c2c2;
-  --accent-foreground: #2a1f14;
-  --destructive: #c84a3a;
-  --border: #dcd2bd;
-  --input: #dcd2bd;
-  --ring: #e8995c;
-  --chart-1: #e8995c;
-  --chart-2: #f2c2c2;
-  --chart-3: #c4a883;
-  --chart-4: #7a6c58;
-  --chart-5: #2a1f14;
+  --secondary: #e8d9bf;
+  --secondary-foreground: #2d2018;
+  --muted: #ebe1cd;
+  --muted-foreground: #8d7866;
+  --accent: #ffbe98;         /* Peach Fuzz */
+  --accent-foreground: #2d2018;
+  --destructive: #b14430;
+  --border: #d8c5af;
+  --input: #d8c5af;
+  --ring: #946652;
+  --chart-1: #946652;
+  --chart-2: #ffbe98;
+  --chart-3: #c4a98a;
+  --chart-4: #8d7866;
+  --chart-5: #2d2018;
   --radius: 1rem;
-  --sidebar: #efe7d8;
-  --sidebar-foreground: #2a1f14;
-  --sidebar-primary: #e8995c;
+  --sidebar: #ede2cf;
+  --sidebar-foreground: #2d2018;
+  --sidebar-primary: #946652;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f2c2c2;
-  --sidebar-accent-foreground: #2a1f14;
-  --sidebar-border: #dcd2bd;
-  --sidebar-ring: #e8995c;
+  --sidebar-accent: #ffbe98;
+  --sidebar-accent-foreground: #2d2018;
+  --sidebar-border: #d8c5af;
+  --sidebar-ring: #946652;
+
+  /* mood 컬러 코딩 — DiaryCard mood pill의 color dot에 사용. 어스톤 팔레트와 충돌 X. */
+  --mood-happy: #f5c870;     /* 행복 — butter yellow */
+  --mood-excited: #ff9f6e;   /* 신남 — coral */
+  --mood-calm: #9bb196;      /* 평온 — sage */
+  --mood-sleepy: #b5a8c7;    /* 졸림 — soft lavender */
+  --mood-bored: #b5a89a;     /* 심심 — warm gray */
+  --mood-sad: #8c9eb5;       /* 슬픔 — dusty blue */
+  --mood-grumpy: #c47054;    /* 까칠 — rust */
 }
 
 @layer base {

@@ -25,7 +25,7 @@ export default async function EditPetPage({ params }: Props) {
 
   return (
     <main className="flex flex-1 items-center justify-center p-8">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>{pet.name} 정보 수정</CardTitle>
         </CardHeader>

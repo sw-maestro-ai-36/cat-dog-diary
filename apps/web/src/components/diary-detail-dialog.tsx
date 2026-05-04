@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { deleteDiary } from "@/lib/api/diaries";
+import { MOOD_COLOR_VAR } from "@/lib/mood";
 
 interface DiaryDetailDialogProps {
   diary: Diary;
@@ -72,7 +73,12 @@ export function DiaryDetailDialog({
           />
 
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium ring-1 ring-foreground/10">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-1 text-xs font-medium">
+              <span
+                className="size-1.5 rounded-full"
+                style={{ backgroundColor: MOOD_COLOR_VAR[diary.mood_tag] }}
+                aria-hidden
+              />
               {diary.mood_tag}
             </span>
             <span className="text-sm font-medium">{diary.short_caption}</span>

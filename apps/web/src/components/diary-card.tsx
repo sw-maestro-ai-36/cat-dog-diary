@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Diary } from "@cat-dog-diary/shared-types";
 import { DiaryDetailDialog } from "@/components/diary-detail-dialog";
+import { MOOD_COLOR_VAR } from "@/lib/mood";
 
 interface DiaryCardProps {
   diary: Diary;
@@ -23,7 +24,7 @@ export function DiaryCard({ diary }: DiaryCardProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group/diary-card flex w-40 shrink-0 flex-col gap-2 overflow-hidden rounded-xl bg-card text-left text-card-foreground ring-1 ring-foreground/10 transition-shadow hover:ring-2 hover:ring-primary/30 focus-visible:ring-2 focus-visible:ring-primary"
+        className="group/diary-card flex w-56 shrink-0 flex-col gap-2 overflow-hidden rounded-2xl border border-border/40 bg-card text-left text-card-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
         aria-label={`${diary.short_caption} 자세히 보기`}
       >
         <div className="relative aspect-square w-full overflow-hidden bg-muted">
@@ -31,17 +32,22 @@ export function DiaryCard({ diary }: DiaryCardProps) {
           <img
             src={diary.photo_signed_url}
             alt={diary.short_caption}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover/diary-card:scale-[1.02]"
           />
-          <span className="absolute top-1.5 right-1.5 rounded-full bg-background/90 px-2 py-0.5 text-[0.7rem] font-medium ring-1 ring-foreground/10">
+          <span className="absolute top-2 right-2 inline-flex items-center gap-1.5 rounded-full bg-background/95 px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-sm">
+            <span
+              className="size-1.5 rounded-full"
+              style={{ backgroundColor: MOOD_COLOR_VAR[diary.mood_tag] }}
+              aria-hidden
+            />
             {diary.mood_tag}
           </span>
         </div>
-        <div className="flex flex-col gap-0.5 px-2.5 pb-2.5">
-          <p className="line-clamp-2 text-xs leading-snug font-medium">
+        <div className="flex flex-col gap-1 px-3 pb-3">
+          <p className="line-clamp-2 text-sm leading-snug font-medium">
             {diary.short_caption}
           </p>
-          <span className="text-[0.7rem] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {dateLabel}
           </span>
         </div>
