@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { SiteHeader } from "@/components/site-header";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getUsageToday } from "@/lib/server/usage";
 import { NewDiaryClient } from "./new-diary-client";
@@ -38,15 +39,19 @@ export default async function NewDiaryPage({ searchParams }: Props) {
   if (usage.new_remaining <= 0) redirect("/");
 
   return (
-    <main className="flex flex-1 flex-col items-center p-6 pb-12">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle>{pet.name}의 새 일기</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <NewDiaryClient pet={pet as Pet} initialNewRemaining={usage.new_remaining} />
-        </CardContent>
-      </Card>
+    <main className="flex flex-1 flex-col">
+      <SiteHeader />
+
+      <div className="mx-auto flex w-full max-w-2xl flex-1 items-start px-4 py-12 sm:px-6">
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle className="text-xl">{pet.name}의 새 일기</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NewDiaryClient pet={pet as Pet} initialNewRemaining={usage.new_remaining} />
+          </CardContent>
+        </Card>
+      </div>
     </main>
   );
 }

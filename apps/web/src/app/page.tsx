@@ -5,6 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { EmptyStateCard } from "@/components/empty-state-card";
 import { HeaderUserMenu } from "@/components/header-user-menu";
 import { PetRow } from "@/components/pet-row";
+import { SiteHeader } from "@/components/site-header";
 import { listDiariesForPet } from "@/lib/server/diaries";
 import { getUsageToday } from "@/lib/server/usage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -47,13 +48,9 @@ export default async function Home() {
 
   return (
     <main className="flex flex-1 flex-col">
-      <header className="sticky top-0 z-10 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
-          <Link href="/" className="flex shrink-0 items-center gap-2 whitespace-nowrap">
-            <span className="text-2xl">🐱🐶</span>
-            <span className="text-lg font-semibold tracking-tight">냥멍일기</span>
-          </Link>
-          <div className="flex shrink-0 items-center gap-2">
+      <SiteHeader
+        actions={
+          <>
             {pets.length > 0 ? (
               <Link
                 href="/pets/new"
@@ -65,9 +62,9 @@ export default async function Home() {
               </Link>
             ) : null}
             <HeaderUserMenu displayName={displayName} email={user.email ?? ""} />
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {pets.length === 0 ? (
         <div className="flex flex-1 items-center justify-center px-4 py-16 sm:px-6">

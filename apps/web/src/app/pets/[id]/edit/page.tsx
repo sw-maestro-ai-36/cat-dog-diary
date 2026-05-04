@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { SiteHeader } from "@/components/site-header";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { EditPetClient } from "./edit-pet-client";
 
@@ -24,15 +25,19 @@ export default async function EditPetPage({ params }: Props) {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center p-8">
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <CardTitle>{pet.name} 정보 수정</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <EditPetClient pet={pet} />
-        </CardContent>
-      </Card>
+    <main className="flex flex-1 flex-col">
+      <SiteHeader />
+
+      <div className="mx-auto flex w-full max-w-lg flex-1 items-start px-4 py-12 sm:px-6">
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle className="text-xl">{pet.name} 정보 수정</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EditPetClient pet={pet} />
+          </CardContent>
+        </Card>
+      </div>
     </main>
   );
 }

@@ -17,6 +17,7 @@ import {
   PhotoUploadError,
   uploadPetPhoto,
 } from "@/lib/storage/upload";
+import { MOOD_COLOR_VAR } from "@/lib/mood";
 import { cn } from "@/lib/utils";
 
 type Step = "input" | "loading" | "result";
@@ -197,13 +198,18 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
           <img
             src={previewUrl}
             alt={result.short_caption}
-            className="aspect-square w-full rounded-xl object-cover"
+            className="aspect-square w-full rounded-2xl border border-border/40 object-cover shadow-sm"
           />
         ) : null}
 
-        <div className="flex flex-col gap-2 rounded-xl bg-muted/30 p-4">
+        <div className="flex flex-col gap-2 rounded-2xl border border-border/40 bg-muted/30 p-4">
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-background px-2 py-0.5 text-xs font-medium ring-1 ring-foreground/10">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-background px-2.5 py-1 text-xs font-medium">
+              <span
+                className="size-1.5 rounded-full"
+                style={{ backgroundColor: MOOD_COLOR_VAR[result.mood_tag] }}
+                aria-hidden
+              />
               {result.mood_tag}
             </span>
             <span className="text-sm font-medium">{result.short_caption}</span>
@@ -285,8 +291,8 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={cn(
-            "flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-muted/40 ring-1 ring-foreground/10 transition hover:bg-muted/60 focus-within:ring-2 focus-within:ring-primary",
-            isDragging && "bg-primary/5 ring-2 ring-primary",
+            "flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-border/40 bg-muted/30 transition-all hover:border-primary/40 hover:bg-muted/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30",
+            isDragging && "border-primary bg-primary/5 ring-2 ring-primary/30",
           )}
         >
           {previewUrl ? (
