@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -36,7 +37,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <div className="flex flex-col items-center gap-3 pt-4 text-center">
-            <span className="text-6xl">🐱🐶</span>
+            <BrandLogo className="size-20 text-primary" />
             <CardTitle className="text-3xl">냥멍일기</CardTitle>
             <CardDescription className="text-base">
               사진 한 장에서 시작하는 반려동물 1인칭 일기

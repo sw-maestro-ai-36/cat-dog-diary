@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PawPrint } from "@phosphor-icons/react/dist/ssr";
 import { toast } from "sonner";
 import type { MoodTag, Pet } from "@cat-dog-diary/shared-types";
 import { Button } from "@/components/ui/button";
@@ -182,7 +183,12 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
   if (step === "loading") {
     return (
       <div className="flex flex-col items-center gap-4 py-12 text-center">
-        <span className="text-4xl">🐾</span>
+        <PawPrint
+          size={48}
+          weight="duotone"
+          className="animate-pulse text-primary"
+          aria-hidden
+        />
         <p className="text-sm text-muted-foreground">
           일기를 쓰고 있어요... 보통 8초 정도 걸려요.
         </p>

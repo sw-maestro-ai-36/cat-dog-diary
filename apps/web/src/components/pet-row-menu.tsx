@@ -27,9 +27,10 @@ export function PetRowMenu({ petId, petName }: PetRowMenuProps) {
         <DropdownMenuTrigger
           render={
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon-sm"
               aria-label={`${petName} 메뉴`}
+              className="text-muted-foreground"
             />
           }
         >

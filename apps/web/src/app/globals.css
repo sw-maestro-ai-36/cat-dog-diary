@@ -2,6 +2,17 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* 헤더 워드마크 전용 (SiteHeader). Air 글리프(400)에 font-weight 600 적용 →
+   브라우저가 합성 medium으로 렌더 (Bold 700과 Air 400 사이의 시각 무게).
+   webfontworld jsdelivr 미러. 라이선스: 카페24 무료. */
+@font-face {
+  font-family: "Cafe24SsurroundAir";
+  src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/Cafe24SsurroundAir.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -95,7 +106,14 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: linear-gradient(
+      to bottom,
+      #efe5d4 0%,
+      #f4ece1 32%,
+      #f7f0e3 100%
+    );
+    background-attachment: fixed;
   }
   html {
     @apply font-sans;

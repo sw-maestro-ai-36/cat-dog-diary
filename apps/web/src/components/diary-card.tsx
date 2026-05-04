@@ -24,7 +24,7 @@ export function DiaryCard({ diary }: DiaryCardProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group/diary-card flex w-56 shrink-0 flex-col gap-2 overflow-hidden rounded-2xl border border-border/40 bg-card text-left text-card-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+        className="group/diary-card flex w-56 shrink-0 flex-col gap-2 overflow-hidden rounded-2xl border border-border/40 bg-card text-left text-card-foreground shadow-md ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
         aria-label={`${diary.short_caption} 자세히 보기`}
       >
         <div className="relative aspect-square w-full overflow-hidden bg-muted">
