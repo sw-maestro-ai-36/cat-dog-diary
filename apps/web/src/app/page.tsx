@@ -77,7 +77,7 @@ export default async function Home() {
           {/* Hero — deep section, 풀블리드 */}
           <section className="bg-deep text-background py-20 px-6 sm:px-10 lg:py-32">
             <div className="mx-auto grid max-w-[1600px] grid-cols-1 gap-10 lg:grid-cols-12 lg:items-center">
-              <div className="lg:col-span-7">
+              <div className="lg:col-span-8">
                 <div className="mb-8 flex items-center gap-3 text-sm tracking-[0.3em] text-accent uppercase">
                   <span className="h-px w-8 bg-accent" />
                   <span>Today&apos;s Diary · {heroDate} · {displayName}님</span>
@@ -93,36 +93,8 @@ export default async function Home() {
                   반려동물 사진 한 장과 키워드 한 줄로,<br />
                   1인칭 시점의 따뜻한 일기가 자동으로 완성돼요.
                 </p>
-                <div className="mt-12 flex flex-wrap gap-3">
-                  {pets[0] ? (
-                    <Link
-                      href={{
-                        pathname: "/diaries/new",
-                        query: { pet_id: pets[0].id },
-                      }}
-                      className={buttonVariants({
-                        size: "lg",
-                        className:
-                          "bg-accent text-foreground hover:bg-accent/80 px-8 h-14 rounded-md text-lg font-medium",
-                      })}
-                    >
-                      + 새 일기 만들기
-                    </Link>
-                  ) : null}
-                  <Link
-                    href="/pets/new"
-                    className={buttonVariants({
-                      variant: "outline",
-                      size: "lg",
-                      className:
-                        "border-background/40 bg-transparent text-background hover:bg-deep-soft hover:text-background px-8 h-14 rounded-md text-lg font-medium",
-                    })}
-                  >
-                    + 새 펫 추가
-                  </Link>
-                </div>
                 {/* Stat strip */}
-                <div className="mt-16 flex gap-12 border-t border-background/20 pt-10 sm:gap-16">
+                <div className="mt-12 flex gap-12 border-t border-background/20 pt-10 sm:gap-16">
                   <div>
                     <div className="font-display text-6xl sm:text-7xl">
                       {pets.length}
@@ -151,8 +123,8 @@ export default async function Home() {
               </div>
 
               {/* Photo collage 2x2 — 최근 일기 사진 */}
-              <div className="lg:col-span-5">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="lg:col-span-4">
+                <div className="mx-auto grid max-w-md grid-cols-2 gap-3 lg:max-w-none">
                   {[0, 1, 2, 3].map((slot) => {
                     const photo = heroPhotos[slot];
                     if (photo) {
