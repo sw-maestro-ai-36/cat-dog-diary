@@ -27,11 +27,13 @@ export async function SiteHeader() {
   return (
     <header className="w-full border-b border-border/40 bg-card/70">
       {/* grid 3-cols 균등 — nav가 viewport 정중앙. flex justify-between은 좌/우 자식 width
-          가 다르면 가운데 자식이 정중앙에 오지 않아 우측 치우침이 생김. */}
+          가 다르면 가운데 자식이 정중앙에 오지 않아 우측 치우침이 생김.
+          각 자식에 col-start 고정 — sm 미만에서 nav가 display:none일 때 auto-flow가
+          dropdown을 col 2로 당겨오는 문제 방지. */}
       <div className="mx-auto grid w-full max-w-[1600px] grid-cols-3 items-center gap-3 px-6 py-6 sm:px-10">
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-3 whitespace-nowrap text-primary justify-self-start"
+          className="col-start-1 flex shrink-0 items-center gap-3 whitespace-nowrap text-primary justify-self-start"
         >
           <BrandLogo className="size-11" />
           <span
@@ -45,7 +47,7 @@ export async function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-10 text-lg justify-self-center sm:flex">
+        <nav className="col-start-2 hidden items-center gap-10 text-lg justify-self-center sm:flex">
           <NavLink href="/" matchPath="/">
             메인
           </NavLink>
@@ -54,7 +56,7 @@ export async function SiteHeader() {
           </NavLink>
         </nav>
 
-        <div className="justify-self-end">
+        <div className="col-start-3 justify-self-end">
           <HeaderUserMenu displayName={displayName} email={user.email ?? ""} />
         </div>
       </div>
