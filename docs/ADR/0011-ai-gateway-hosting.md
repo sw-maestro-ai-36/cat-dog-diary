@@ -56,13 +56,13 @@ POST /diary/generate
     gender,             # 'male' | 'female' | 'unknown'
     recent_diaries      # BFF가 diaries에서 fetch (최근 3개 diary_text)
   }
-  Response: { diary_text, short_caption, mood_tag }
+  Response: SSE (`text/event-stream`) — 이벤트 union은 ADR-0008 부록(2026-05-05) 및 packages/shared-types/src/stream.ts
 
 POST /diary/regenerate
   Headers: 동일
   Body: {
     session_id,
-    seq,                # BFF 결정 (다음 seq, 2~4)
+    seq,                  # BFF 결정 (다음 seq, 2~4)
     pet_id,
     photo_signed_url,
     keywords,
@@ -71,9 +71,10 @@ POST /diary/regenerate
     gender,
     recent_diaries,
     previous_diary_text,
-    feedback?           # 1~500자 자유 텍스트, NULL 허용
+    feedback?,            # 1~500자 자유 텍스트, NULL 허용
+    vision_description?   # 직전 generation의 vision 결과 echo. 있으면 graph가 vision LLM skip (ADR-0005 부록 2026-05-05)
   }
-  Response: { diary_text, short_caption, mood_tag }
+  Response: SSE (`text/event-stream`) — ADR-0008 부록(2026-05-05) 참조
 
 GET /health
   Headers: 없음 (X-Internal-Secret 미들웨어 제외 — Railway healthcheck용)
@@ -89,14 +90,17 @@ GET /health
 ### AI Gateway (Railway)
 ```
 OPENAI_API_KEY            # OpenAI
-SUPABASE_URL              # https://<project>.supabase.co
-SUPABASE_ANON_KEY         # anon 공개 키 (β 패턴)
-SUPABASE_JWKS_URL         # https://<project>.supabase.co/auth/v1/.well-known/jwks.json
+SUPABASE_URL              # https://<project>.supabase.co (NEXT_PUBLIC_SUPABASE_URL alias 수용).
+                          # JWKS URL은 derive: f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json"
 INTERNAL_SHARED_SECRET    # BFF↔Gateway 공유 비밀
-LANGSMITH_API_KEY         # ADR-0012
+LANGSMITH_API_KEY         # ADR-0012 (PAT 권장 — Service Key는 trace 쓰기 권한 X)
 LANGSMITH_TRACING=true    # 자동 trace 활성화 토글 (ADR-0012)
+LANGSMITH_PROJECT         # 환경별 trace 분리 (예: cat-dog-diary-prod)
 PORT                      # Railway 자동 inject
 ```
+
+> 본문은 SUPABASE_ANON_KEY / SUPABASE_JWKS_URL을 별도 env로 명시했으나 실제 미사용.
+> ANON_KEY는 ai-gateway 코드 경로에서 미참조(supabase-js는 BFF만), JWKS_URL은 SUPABASE_URL에서 derive.
 
 ### BFF (Vercel)
 ```
@@ -138,3 +142,13 @@ SUPABASE_URL / SUPABASE_ANON_KEY  # supabase-js init용
 - BFF 측 미들웨어 — 모든 Gateway 호출 시 `X-Internal-Secret` 헤더 추가.
 - Gateway 측 미들웨어 — `X-Internal-Secret` 검증 (단, `/health`는 제외).
 - Gateway 측 JWKS 캐싱 + `Authorization: Bearer` JWT 검증 (sub/aud/exp).
+
+---
+
+## 부록 — endpoint 갱신: SSE + vision_description forward (2026-05-05)
+
+본문 §endpoint signature의 `Response: { diary_text, short_caption, mood_tag }`는 outdated. 실제는 SSE StreamingResponse로 전환됨 — 채택 이유와 mediator 패턴은 ADR-0008 부록(2026-05-05).
+
+`/diary/regenerate` body에 `vision_description?: string` 추가 — seq≥2일 때 BFF가 직전 row에서 SELECT → forward → graph의 `_route_vision` conditional edge가 vision LLM skip (ADR-0005 부록 2026-05-05). NULL fallback 시 BFF mediator가 새로 emit된 `vision_done` 값으로 echo.
+
+`SUPABASE_ANON_KEY`는 ai-gateway 미사용 → env 표에서 제거. `SUPABASE_JWKS_URL`은 `SUPABASE_URL`에서 derive하므로 별도 env var 아님. `LANGSMITH_PROJECT`는 환경별 trace 분리(ADR-0012)를 위해 추가.

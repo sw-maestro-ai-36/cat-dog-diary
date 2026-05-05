@@ -41,14 +41,9 @@ ADR-0007(Y-2 영속화) 위에서 BFF가 클라이언트에 노출할 endpoint�
 
 ### 응답 페이로드 모양
 
+`/generate`, `/regenerate`는 **SSE (`text/event-stream`)** — JSON 단일 응답 X. 자세한 결정과 이벤트 union은 본 ADR 부록(2026-05-05). 나머지는 JSON:
+
 ```jsonc
-// /generate
-{ session_id, generation_id, diary_text, short_caption, mood_tag,
-  regenerate_remaining, today_new_remaining }
-
-// /regenerate
-{ generation_id, diary_text, short_caption, mood_tag, regenerate_remaining }
-
 // /diaries (POST)
 { diary_id }
 
@@ -88,3 +83,47 @@ ADR-0007(Y-2 영속화) 위에서 BFF가 클라이언트에 노출할 endpoint�
 ### 후속 조치
 - 마이그레이션: `usage_quotas` 테이블.
 - BFF 미들웨어: 모든 `/api/diaries/*` 요청에 세션 검증 + Gateway 호출 시 JWT forward.
+
+---
+
+## 부록 — `/generate`·`/regenerate` SSE 전환 + BFF mediator (2026-05-05)
+
+본 ADR 본문은 `/generate`, `/regenerate` 응답을 단일 JSON으로 가정했지만 구현 단계에서 SSE로 전환됨.
+
+### Why SSE
+
+1. P95 < 8s NFR 지키되 **사용자 체감 latency 단축** — diary partial 누적으로 "쓰는 중" 진행감.
+2. graph 노드 단위 라벨 전환 ("사진 분석 중" → "일기 쓰는 중") — `node` 이벤트로 제공.
+3. safety retry 발생 시 본문 reset 신호 — `retry` 이벤트.
+
+### BFF mediator 패턴
+
+Gateway SSE를 **그대로 forward 안 함**. BFF가 mediator로 가공:
+
+```
+gateway → BFF: node | vision_done | diary_partial | retry | result | error
+BFF → 클라이언트: node | diary_partial | retry | result | meta | error
+                  (vision_done은 BFF에서 종결, meta는 BFF가 INSERT 후 추가)
+```
+
+- `vision_done` 가로채(closure 보관, 클라이언트 forward X) → DB INSERT 시 `vision_description` echo (ADR-0007, ADR-0010).
+- `result` 시점에 `diary_generations` INSERT + `usage_quotas` UPSERT(generate만) → 성공 시 `meta` 이벤트 emit.
+- 클라이언트는 `meta`까지 받아야 generation 확정 (없으면 INSERT 실패 ⇒ 재생성/채택 차단).
+
+### 이벤트 union (실측)
+
+`packages/shared-types/src/stream.ts` 단일 진실 소스. 7종:
+
+| type | 발신자 | 의미 |
+|---|---|---|
+| `node` | gateway | graph 노드 시작/종료 (UI 라벨 전환) |
+| `vision_done` | gateway | analyze_image 산출. **BFF 종결**, 클라이언트 미수신 |
+| `diary_partial` | gateway | write_diary 누적 diary_text (매번 전체) |
+| `retry` | gateway | safety violation → 본문 reset |
+| `result` | gateway | 최종 산출 (text/caption/mood) |
+| `meta` | BFF | INSERT 후 generation_id/session_id/카운터 |
+| `error` | gateway/BFF | 종료 신호 |
+
+### 카운트 정책 변경 없음
+
+INSERT/UPSERT 시점·트랜잭션 단위는 본문 §카운트 정책 그대로 — `result` 시점에 한 번. 자동 safety retry는 여전히 user 트리거 카운트 1.
