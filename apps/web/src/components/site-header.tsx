@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 import { HeaderUserMenu } from "@/components/header-user-menu";
+import { NavLink } from "@/components/nav-link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function SiteHeader() {
@@ -52,29 +53,24 @@ export async function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-10 text-lg sm:flex">
-          <Link
-            href="/"
-            className="text-foreground hover:text-primary transition-colors"
-          >
+          <NavLink href="/" matchPath="/">
             메인
-          </Link>
+          </NavLink>
           {firstPetId ? (
-            <Link
+            <NavLink
               href={{
                 pathname: "/diaries/new",
                 query: { pet_id: firstPetId },
               }}
-              className="text-muted-foreground hover:text-primary transition-colors"
+              matchPath="/diaries/new"
+              matchType="startsWith"
             >
               새 일기
-            </Link>
+            </NavLink>
           ) : null}
-          <Link
-            href="/pets/new"
-            className="text-muted-foreground hover:text-primary transition-colors"
-          >
+          <NavLink href="/pets/new" matchPath="/pets/new">
             새 펫
-          </Link>
+          </NavLink>
         </nav>
 
         <HeaderUserMenu displayName={displayName} email={user.email ?? ""} />
