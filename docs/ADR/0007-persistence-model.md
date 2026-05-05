@@ -26,7 +26,7 @@
 
 ### Y-2 — 두 테이블 분리
 
-- `diary_generations`: 모든 시도 + **입력 snapshot** (`photo_path`, `keywords`, `honorific_used`, `species_used`, `regen_feedback`). 운영 메타 (token / cost / trace_id)는 LangSmith trace로 보존 (ADR-0012). DB는 입력/출력 snapshot만 영속.
+- `diary_generations`: 모든 시도 + **입력 snapshot** (`photo_path`, `keywords`, `honorific_used`, `species_used`, `regen_feedback`) + **vision 산출 echo** (`vision_description`, 2026-05-05 추가 — 같은 session 내 regenerate 시 vision LLM skip 위해 매 row echo, 컬럼 정의는 ADR-0010, graph 분기는 ADR-0005 부록 2026-05-05). 운영 메타 (token / cost / trace_id)는 LangSmith trace로 보존 (ADR-0012). DB는 입력/출력 snapshot만 영속.
 - `diaries`: 채택본의 사용자 데이터(`diary_text`, `short_caption`, `mood_tag`, `photo_path`, `pet_id`, `owner_id`, `diary_date`). `source_generation_id` FK로 어느 시도가 채택됐는지 역참조.
 
 ## Rationale

@@ -168,3 +168,39 @@ retry max 도달 후에도 violation이면 마지막 결과 그대로 END (Q9-3-
 - `.claude/rules/tone-guide.md` 작성 (Q7-B-5 D + 3-layer 후속).
 - prompt v1 (system + user template) 별도 작성 단계.
 - `request_id` 추적은 LangSmith trace_id 자동 사용 (Q10 결정 후 정식 정합).
+
+---
+
+## 부록 — vision/diary 2-step 분리 + vision skip (2026-05-05)
+
+이전 부록(2026-05-03)이 가정한 "1회 LLM 호출"은 구현 단계에서 두 차례 변경됨:
+
+1. **vision/diary 분리** — 사진 사실 묘사(vision)와 1인칭 한국어 톤(diary)은 책임이 달라 모듈 분리. `agents/vision.py`, `agents/diary.py`로 캡슐화.
+2. **vision skip 분기** — 같은 session 내 regenerate 시 photo 동일 → vision LLM 반복 호출 비용 절약 위해 conditional edge로 skip.
+
+### 토폴로지 (실측 — `arch.md` §1 정합)
+
+```
+START → prepare_context
+       ↓ conditional `_route_vision`
+       ├─ vision_description == None → analyze_image → write_diary
+       └─ vision_description != None  → write_diary (skip)
+write_diary → safety_check
+            ↓ conditional `should_retry`
+            ├─ violation && retry<2 → write_diary
+            └─ otherwise → END
+```
+
+노드 4개(`prepare_context`/`analyze_image`/`write_diary`/`safety_check`) + conditional 2곳. retry는 `write_diary`로만 회귀 — vision 토큰은 1회만 소비.
+
+### State schema 변경
+
+`vision_description: Optional[str]` 필드 추가. seq=1에서 `analyze_image`가 채우고 BFF가 `diary_generations.vision_description` 컬럼에 echo (ADR-0010). seq≥2 regenerate에선 BFF가 직전 row에서 SELECT → state 초기화 시 forward → `_route_vision`이 vision LLM skip.
+
+legacy row(`vision_description IS NULL`)는 다음 regenerate에서 self-heal → migration backfill 불필요.
+
+### 효과
+
+regenerate 호출당 vision LLM 1회 절감, 응답 시간 약 6초 단축.
+
+vision skip 시 `vision_done` SSE 미emit → BFF mediator는 NULL fallback으로 lastGen 값 echo (ADR-0008 부록 2026-05-05).

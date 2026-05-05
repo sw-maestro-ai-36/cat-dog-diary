@@ -55,6 +55,7 @@ ADR-0006 (β JWT forward), ADR-0007 (Y-2 영속화), ADR-0008 (BFF API), ADR-000
 - `(session_id, seq)` UNIQUE, `seq smallint check (between 1 and 4)`.
 - 입력 snapshot 컬럼: `photo_path`, `keywords(1~1000)`, **`honorific_used`**, **`species_used`**, **`gender_used`** (`pets` 변경 후에도 그 시점 추적).
 - **`regen_feedback`** text NULL 허용 1~500자. seq=1은 NULL, 그 외는 사용자 피드백 (선택).
+- **`vision_description`** text NULL 허용 1~1000자 CHECK (2026-05-05 추가, migration `20260505020000`). seq=1은 graph가 채우고 BFF가 echo, seq≥2는 BFF가 직전 row에서 forward → graph가 vision LLM skip (ADR-0005 부록 2026-05-05, ADR-0007 §Y-2). legacy row는 NULL → 다음 regenerate에서 self-heal.
 - LLM 입력에는 직전 generation 1개만 inject (토큰 안정성).
 - `is_adopted` 플래그 X — `diaries.source_generation_id` 역참조.
 - **immutable** — UPDATE RLS 거부.
