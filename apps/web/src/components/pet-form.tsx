@@ -50,39 +50,69 @@ export function PetForm({ defaultValues, submitLabel, onSubmit }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="name">이름 <span className="text-muted-foreground text-xs">(1~20자)</span></Label>
-        <Input id="name" placeholder="예: 까망이" {...register("name")} />
+    <form onSubmit={handleSubmit(submit)} className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="name" className="text-base">
+          이름{" "}
+          <span className="text-muted-foreground text-sm">(1~20자)</span>
+        </Label>
+        <Input
+          id="name"
+          placeholder="예: 까망이"
+          className="h-12 text-base"
+          {...register("name")}
+        />
         {errors.name && (
-          <p className="text-xs text-destructive">{errors.name.message}</p>
+          <p className="text-sm text-destructive">{errors.name.message}</p>
         )}
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="species">종 <span className="text-muted-foreground text-xs">(고양이/강아지 또는 자유 입력)</span></Label>
-        <Input id="species" placeholder="예: 고양이" {...register("species")} />
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="species" className="text-base">
+          종{" "}
+          <span className="text-muted-foreground text-sm">
+            (고양이/강아지 또는 자유 입력)
+          </span>
+        </Label>
+        <Input
+          id="species"
+          placeholder="예: 고양이"
+          className="h-12 text-base"
+          {...register("species")}
+        />
         {errors.species && (
-          <p className="text-xs text-destructive">{errors.species.message}</p>
+          <p className="text-sm text-destructive">{errors.species.message}</p>
         )}
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="honorific">호칭 <span className="text-muted-foreground text-xs">(반려동물이 사용자를 부르는 말)</span></Label>
-        <Input id="honorific" placeholder="예: 집사, 누나" {...register("honorific")} />
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="honorific" className="text-base">
+          호칭{" "}
+          <span className="text-muted-foreground text-sm">
+            (반려동물이 사용자를 부르는 말)
+          </span>
+        </Label>
+        <Input
+          id="honorific"
+          placeholder="예: 집사, 누나"
+          className="h-12 text-base"
+          {...register("honorific")}
+        />
         {errors.honorific && (
-          <p className="text-xs text-destructive">{errors.honorific.message}</p>
+          <p className="text-sm text-destructive">{errors.honorific.message}</p>
         )}
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="gender">성별</Label>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="gender" className="text-base">
+          성별
+        </Label>
         <Controller
           control={control}
           name="gender"
           render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="gender" className="w-full">
+              <SelectTrigger id="gender" className="h-12 w-full text-base">
                 <SelectValue placeholder="성별 선택" />
               </SelectTrigger>
               <SelectContent>
@@ -94,7 +124,7 @@ export function PetForm({ defaultValues, submitLabel, onSubmit }: Props) {
           )}
         />
         {errors.gender && (
-          <p className="text-xs text-destructive">{errors.gender.message}</p>
+          <p className="text-sm text-destructive">{errors.gender.message}</p>
         )}
       </div>
 
@@ -102,7 +132,12 @@ export function PetForm({ defaultValues, submitLabel, onSubmit }: Props) {
         <p className="text-sm text-destructive">{errors.root.message}</p>
       )}
 
-      <Button type="submit" disabled={isSubmitting} size="lg">
+      <Button
+        type="submit"
+        disabled={isSubmitting}
+        size="lg"
+        className="h-14 rounded-md text-lg font-medium"
+      >
         {isSubmitting ? "저장 중..." : submitLabel}
       </Button>
     </form>

@@ -43,24 +43,25 @@ export default async function NewDiaryPage({ searchParams }: Props) {
 
   return (
     <main className="flex flex-1 flex-col">
-      <SiteHeader newDiaryPetId={pet.id} />
+      <SiteHeader />
 
       {/* Hero 헤더 — deep 색블록 + 큰 display typography */}
-      <section className="bg-deep text-background px-6 py-16 sm:px-10 lg:py-20">
+      <section className="bg-deep text-background px-6 py-20 sm:px-10 lg:py-24">
         <div className="mx-auto max-w-[1600px]">
-          <div className="mb-5 flex items-center gap-3 text-xs tracking-[0.3em] text-accent uppercase">
+          <div className="mb-8 flex items-center gap-3 text-sm tracking-[0.3em] text-accent uppercase">
             <span className="h-px w-8 bg-accent" />
             <span>New Diary · {heroDate}</span>
           </div>
           <h1
-            className="font-display text-5xl leading-[1.05] sm:text-6xl lg:text-7xl"
+            className="font-display text-5xl leading-[0.95] sm:text-6xl lg:text-7xl"
             style={{ letterSpacing: "-0.02em" }}
           >
             {pet.name}의<br />
             <span className="text-accent">오늘</span>을 기록할 시간
           </h1>
-          <p className="mt-5 max-w-lg text-base leading-relaxed text-background/70 sm:text-lg">
-            사진 한 장과 키워드 한 줄. 1인칭 일기가 자동으로 완성돼요.
+          <p className="mt-8 text-lg leading-relaxed text-background/70 sm:mt-10 sm:text-xl">
+            사진 한 장과 키워드 한 줄.<br />
+            1인칭 시점의 따뜻한 일기가 자동으로 완성돼요.
           </p>
         </div>
       </section>

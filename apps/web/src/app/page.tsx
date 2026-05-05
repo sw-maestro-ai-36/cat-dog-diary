@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import type { Diary, Pet, Profile } from "@cat-dog-diary/shared-types";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyStateCard } from "@/components/empty-state-card";
-import { HeaderUserMenu } from "@/components/header-user-menu";
 import { PetRow } from "@/components/pet-row";
 import { SiteHeader } from "@/components/site-header";
 import { listDiariesForPet } from "@/lib/server/diaries";
@@ -70,12 +69,7 @@ export default async function Home() {
 
   return (
     <main className="flex flex-1 flex-col">
-      <SiteHeader
-        newDiaryPetId={pets[0]?.id}
-        actions={
-          <HeaderUserMenu displayName={displayName} email={user.email ?? ""} />
-        }
-      />
+      <SiteHeader />
 
       {pets.length === 0 ? (
         <EmptyStateCard />

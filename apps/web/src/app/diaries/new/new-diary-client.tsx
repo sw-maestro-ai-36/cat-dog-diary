@@ -353,7 +353,7 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
   }
 
   return (
-    <form onSubmit={handleGenerate} className="flex flex-col gap-4">
+    <form onSubmit={handleGenerate} className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
         <input
           id="photo"
@@ -368,8 +368,9 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={cn(
-            "flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border border-border/40 bg-muted/30 transition-all hover:border-primary/40 hover:bg-muted/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30",
+            "flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-border bg-card/40 transition-all hover:border-primary hover:bg-card focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30",
             isDragging && "border-primary bg-primary/5 ring-2 ring-primary/30",
+            previewUrl && "border-solid",
           )}
         >
           {previewUrl ? (
@@ -381,31 +382,42 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex flex-col items-center gap-1 text-center text-sm text-muted-foreground">
-              <span>클릭하거나 사진을 끌어다 놓으세요</span>
-              <span className="text-xs">JPG/PNG · 10MB 이하</span>
+            <div className="flex flex-col items-center gap-2 text-center">
+              <span className="font-display text-4xl text-primary">+</span>
+              <span className="text-base font-medium text-foreground">
+                클릭하거나 사진을 끌어다 놓으세요
+              </span>
+              <span className="text-sm text-muted-foreground">
+                JPG/PNG · 10MB 이하
+              </span>
             </div>
           )}
         </label>
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="keywords">오늘의 키워드</Label>
+        <Label htmlFor="keywords" className="text-base">
+          오늘의 키워드
+        </Label>
         <textarea
           id="keywords"
           value={keywords}
           onChange={(e) => setKeywords(e.target.value)}
           maxLength={1000}
           rows={4}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          className="w-full rounded-md border border-input bg-card px-4 py-3 text-base"
           placeholder="예: 아침 산책, 처음 본 비둘기에 깜짝, 식빵 굽기"
         />
-        <span className="text-xs text-muted-foreground">
+        <span className="text-sm text-muted-foreground">
           오늘 남은 새 일기 {initialNewRemaining}회
         </span>
       </div>
 
-      <Button type="submit" size="lg">
+      <Button
+        type="submit"
+        size="lg"
+        className="h-14 rounded-md text-lg font-medium"
+      >
         일기 만들기
       </Button>
     </form>

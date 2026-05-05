@@ -20,17 +20,17 @@ export default async function EditPetPage({ params }: Props) {
 
   return (
     <main className="flex flex-1 flex-col">
-      <SiteHeader newDiaryPetId={pet.id} />
+      <SiteHeader />
 
       {/* Hero — deep section */}
-      <section className="bg-deep text-background px-6 py-16 sm:px-10 lg:py-20">
+      <section className="bg-deep text-background px-6 py-20 sm:px-10 lg:py-24">
         <div className="mx-auto max-w-[1600px]">
-          <div className="mb-5 flex items-center gap-3 text-xs tracking-[0.3em] text-accent uppercase">
+          <div className="mb-8 flex items-center gap-3 text-sm tracking-[0.3em] text-accent uppercase">
             <span className="h-px w-8 bg-accent" />
             <span>Edit Pet</span>
           </div>
           <h1
-            className="font-display text-5xl leading-[1.05] sm:text-6xl lg:text-7xl"
+            className="font-display text-5xl leading-[0.95] sm:text-6xl lg:text-7xl"
             style={{ letterSpacing: "-0.02em" }}
           >
             {pet.name}<br />
