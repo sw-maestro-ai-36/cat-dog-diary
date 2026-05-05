@@ -54,7 +54,8 @@ def _initial_state(
         "recent_diaries": req.recent_diaries,
         "previous_diary_text": req.previous_diary_text if is_regen else None,
         "regen_feedback": req.feedback if is_regen else None,
-        "vision_description": None,
+        # regenerate에서 BFF가 forward — 있으면 graph가 analyze_image skip.
+        "vision_description": req.vision_description if is_regen else None,
         "diary_text": None,
         "short_caption": None,
         "mood_tag": None,
@@ -129,11 +130,22 @@ async def _stream_graph(
                 yield _sse({"type": "node", "node": node, "phase": "start"})
 
             elif kind == "on_chain_end":
+                output = event["data"].get("output")
                 if node in _TRACKED_NODES:
                     yield _sse({"type": "node", "node": node, "phase": "end"})
+                    # analyze_image 산출물(vision_description)을 BFF에 emit —
+                    # BFF가 가로채서 DB에 echo. 클라이언트엔 forward 안 됨.
+                    if node == "analyze_image" and isinstance(output, dict):
+                        vd = output.get("vision_description")
+                        if vd:
+                            yield _sse(
+                                {
+                                    "type": "vision_done",
+                                    "vision_description": vd,
+                                }
+                            )
                 # graph 또는 sub-chain output에서 final state 후보 갱신.
                 # 마지막 매칭된 dict가 root graph의 output이 됨.
-                output = event["data"].get("output")
                 if (
                     isinstance(output, dict)
                     and output.get("diary_text")
