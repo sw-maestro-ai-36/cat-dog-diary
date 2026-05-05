@@ -55,3 +55,10 @@ coverage/
 
 # --- Playwright MCP (자동 저장되는 page snapshot / console log) ---
 .playwright-mcp/
+
+# --- 디자인 mockup (검증용 정적 파일) ---
+mockup-*.html
+mockup-*.png
+dribbble-*.png
+dev-*.png
+cmp-*.png
