@@ -1,13 +1,10 @@
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/server/auth";
 import { NewPetClient } from "./new-pet-client";
 
 export default async function NewPetPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
 
   return (

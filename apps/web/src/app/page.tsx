@@ -5,6 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { EmptyStateCard } from "@/components/empty-state-card";
 import { PetRow } from "@/components/pet-row";
 import { SiteHeader } from "@/components/site-header";
+import { getCurrentUser } from "@/lib/server/auth";
 import { listDiariesForPet } from "@/lib/server/diaries";
 import { getUsageToday } from "@/lib/server/usage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -27,11 +28,9 @@ function daysTogether(createdAt: string): number {
 }
 
 export default async function Home() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
+  const supabase = await createSupabaseServerClient();
 
   const [{ data: petsData, error: petsError }, { data: profileData }] =
     await Promise.all([

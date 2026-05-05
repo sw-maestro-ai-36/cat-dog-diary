@@ -4,6 +4,7 @@
 import { redirect } from "next/navigation";
 import type { Pet } from "@cat-dog-diary/shared-types";
 import { SiteHeader } from "@/components/site-header";
+import { getCurrentUser } from "@/lib/server/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getUsageToday } from "@/lib/server/usage";
 import { NewDiaryClient } from "./new-diary-client";
@@ -21,11 +22,9 @@ export default async function NewDiaryPage({ searchParams }: Props) {
   const { pet_id } = await searchParams;
   if (!pet_id) redirect("/");
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
+  const supabase = await createSupabaseServerClient();
 
   // RLS가 본인 alive 펫만 노출 → 없으면 redirect.
   const { data: pet } = await supabase

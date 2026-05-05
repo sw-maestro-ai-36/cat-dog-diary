@@ -5,15 +5,14 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 import { HeaderUserMenu } from "@/components/header-user-menu";
 import { NavLink } from "@/components/nav-link";
+import { getCurrentUser } from "@/lib/server/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function SiteHeader() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return null;
 
+  const supabase = await createSupabaseServerClient();
   const { data: profileData } = await supabase
     .from("profiles")
     .select("display_name")
