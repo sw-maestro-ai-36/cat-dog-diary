@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PawPrint } from "@phosphor-icons/react/dist/ssr";
+import { PawPrint, Plus } from "@phosphor-icons/react/dist/ssr";
 import { toast } from "sonner";
 import type { MoodTag, Pet } from "@cat-dog-diary/shared-types";
 import { Button } from "@/components/ui/button";
@@ -382,8 +382,13 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex flex-col items-center gap-2 text-center">
-              <span className="font-display text-4xl text-primary">+</span>
+            <div className="flex flex-col items-center gap-3 text-center">
+              <Plus
+                size={48}
+                weight="light"
+                className="text-primary"
+                aria-hidden
+              />
               <span className="text-base font-medium text-foreground">
                 클릭하거나 사진을 끌어다 놓으세요
               </span>
