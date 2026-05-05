@@ -66,6 +66,8 @@ class GatewayRegenerateRequest(BaseModel):
     recent_diaries: list[str] = Field(default_factory=list, max_length=3)
     previous_diary_text: str = Field(min_length=1)
     feedback: str | None = Field(default=None, min_length=1, max_length=500)
+    # 직전 generation의 vision 결과. 있으면 graph가 vision LLM 호출 skip.
+    vision_description: str | None = Field(default=None, min_length=1, max_length=1000)
 
 
 GatewayRegenerateResponse = DiaryGenerationResult

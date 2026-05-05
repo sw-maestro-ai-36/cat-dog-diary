@@ -33,6 +33,7 @@ export interface GatewayRegenerateRequest {
   recent_diaries: string[];
   previous_diary_text: string;
   feedback?: string;            // 1~500자, NULL 허용
+  vision_description?: string;  // 직전 generation의 vision 결과 echo. 있으면 graph가 vision 호출 skip.
 }
 export type GatewayRegenerateResponse = DiaryGenerationResult;
 

@@ -12,6 +12,9 @@ export type StreamNode = 'analyze_image' | 'write_diary' | 'safety_check';
 export type StreamEvent =
   // graph 노드 시작/종료. UI 라벨 전환용 ("사진 분석 중" → "일기 쓰는 중").
   | { type: 'node'; node: StreamNode; phase: 'start' | 'end' }
+  // analyze_image LLM 호출 후 산출된 사진 묘사. BFF가 가로채서 DB에 echo.
+  // 클라이언트로 forward되지 않음 (graph 내부 정보).
+  | { type: 'vision_done'; vision_description: string }
   // write_diary 진행 중 토큰 누적된 현재까지의 diary_text. 매번 전체를 보냄(누적 아님).
   | { type: 'diary_partial'; diary_text: string }
   // safety violation 발생 → 재시작. 클라이언트는 본문 reset.
