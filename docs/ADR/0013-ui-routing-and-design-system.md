@@ -143,3 +143,44 @@ ADR-0006~0012로 백엔드·데이터·인프라 결정 완료. 프론트엔드 
 - 도메인(반려동물 일기) = 친근함·따뜻함이 본질. 차가운 미니멀은 거리감.
 - Pretendard는 한국어 가변 폰트 표준 + 무료 + CDN 의존 없이 self-host.
 - 다크모드는 비영리 사이드 + 데모데이 케이스라 야간 사용 빈도 작음.
+
+---
+
+## 부록 — 디자인 시스템 v2 매거진 풍 (2026-05-05)
+
+본문/§부록(2026-05-03) 시각 톤 방향성을 시각 작업 단계에서 다음과 같이 구체화·갱신. 도메인 친근함은 유지하되 모던/풀스크린/큼직 매거진 톤으로 전체 페이지를 재정렬.
+
+### 톤 — Mocha + Peach + Deep 색블록
+
+- **Light** (그대로): `--background: #f4ece1` 크림, `--card: #fffaf3`, `--primary: #946652` Mocha, `--accent: #ffbe98` Peach Fuzz
+- **Deep** (신규): `--deep: #2d2018` (hero 색블록), `--deep-soft: #3d2a1f` (펫 row 교차), `--deep-border: #5a3f2e`
+- 메인: hero deep + 펫 row 교차(light/deep-soft) + 하단 CTA cream
+- 일기 생성·펫 폼 페이지: hero deep + 본문 cream 2-블록
+
+### 모서리 — 1rem → 0.5rem
+
+`--radius: 0.5rem` (이전 1rem). `rounded-md` 기준으로 카드/버튼/입력 정렬. sharp 톤 + 친근함 절충.
+
+### Display 폰트 — Cafe24Ssurround Bold
+
+`--font-display`(Cafe24Ssurround Bold) 추가 — Hero h1·펫 이름·stat 숫자 등 큰 typography. 기존 Pretendard는 본문, Cafe24SsurroundAir는 헤더 워드마크 그대로 유지.
+
+### 레이아웃
+
+- 모든 페이지 `max-w-[1600px]` + generous padding(`px-10`)
+- **PetRow**: 매거진 헤더 — 큰 display 펫 이름 + `Est. {year}` stamp + 일기/함께한 날 stat. 카드 `w-72` fixed + 가로 스크롤(본문 §캐러셀 정합)
+- **DiaryCard**: 풀블리드 사진 + 하단 gradient overlay에 캡션·날짜, `aspect-[3/4]`
+- **EmptyStateCard**: 작은 카드 → deep section 풀스크린 hero
+
+### 헤더 — 통합 + 활성 표시
+
+- `SiteHeader` = async server component → user/profile/첫 펫 자체 fetch → 호출 측 `<SiteHeader />` 한 줄로 모든 페이지 동일
+- nav 3개: **메인 / 새 일기 / 새 펫**. `NavLink`(client)가 `usePathname`으로 활성 비교, 활성 nav `font-bold + text-foreground`
+- sticky 제거 — 스크롤과 같이 흘러감(사용자 선호)
+- `pets/new`를 server component로 변환 + `NewPetClient` 분리(인증 가드 추가)
+
+### 후속 조치 / 메모
+
+- 펫 사진 thumbnail 컬럼 도입(Phase β) 시 hero photo collage 빈 슬롯에 펫 사진 채우는 방향으로 자연 전환
+- 디자인 토큰 utility 생성이 Tailwind v4 + Turbopack에서 일부 누락되는 이슈는 `@layer utilities` 명시 정의로 우회. 향후 Tailwind 픽스되면 cleanup 가능 (`globals.css` `@layer utilities`의 `.bg-deep`, `.bg-deep-soft`, `.text-deep`, `.border-deep-border`, `.font-display`)
+- Tilted/perspective 카드 효과는 미차용 — 펫 일상 사진은 luxury frame과 톤 충돌
