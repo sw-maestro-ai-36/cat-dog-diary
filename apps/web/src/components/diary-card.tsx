@@ -11,7 +11,7 @@ interface DiaryCardProps {
 
 const DATE_FMT = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
-  month: "short",
+  month: "long",
   day: "numeric",
 });
 
@@ -24,32 +24,35 @@ export function DiaryCard({ diary }: DiaryCardProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group/diary-card flex w-56 shrink-0 flex-col gap-2 overflow-hidden rounded-2xl border border-border/40 bg-card text-left text-card-foreground shadow-md ring-1 ring-foreground/5 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+        className="group/diary-card relative aspect-[3/4] w-72 shrink-0 overflow-hidden rounded-md text-left shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
         aria-label={`${diary.short_caption} 자세히 보기`}
       >
-        <div className="relative aspect-square w-full overflow-hidden bg-muted">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={diary.photo_signed_url}
-            alt={diary.short_caption}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover/diary-card:scale-[1.02]"
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={diary.photo_signed_url}
+          alt={diary.short_caption}
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover/diary-card:scale-[1.04]"
+        />
+        {/* gradient overlay — 하단 텍스트 가독성 */}
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-gradient-to-t from-deep/85 via-deep/20 to-transparent"
+        />
+        {/* mood pill */}
+        <span className="absolute top-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-card/95 px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-sm">
+          <span
+            className="size-1.5 rounded-full"
+            style={{ backgroundColor: MOOD_COLOR_VAR[diary.mood_tag] }}
+            aria-hidden
           />
-          <span className="absolute top-2 right-2 inline-flex items-center gap-1.5 rounded-full bg-background/95 px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-sm">
-            <span
-              className="size-1.5 rounded-full"
-              style={{ backgroundColor: MOOD_COLOR_VAR[diary.mood_tag] }}
-              aria-hidden
-            />
-            {diary.mood_tag}
-          </span>
-        </div>
-        <div className="flex flex-col gap-1 px-3 pb-3">
-          <p className="line-clamp-2 text-sm leading-snug font-medium">
+          {diary.mood_tag}
+        </span>
+        {/* 하단 텍스트 */}
+        <div className="absolute right-0 bottom-0 left-0 flex flex-col gap-1.5 p-5 text-background">
+          <span className="text-xs tracking-wide opacity-70">{dateLabel}</span>
+          <p className="line-clamp-2 text-base leading-snug font-medium">
             {diary.short_caption}
           </p>
-          <span className="text-xs text-muted-foreground">
-            {dateLabel}
-          </span>
         </div>
       </button>
 

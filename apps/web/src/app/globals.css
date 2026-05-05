@@ -13,10 +13,24 @@
   font-display: swap;
 }
 
+/* Display 폰트 — 매거진 hero typography (펫 이름·hero 카피). 폰트 파일 자체가 Bold 무게라
+   font-weight 명시하지 않음 — 어떤 weight 요청에도 이 파일이 매칭되도록. 명시하면 default
+   weight(400) 요청에 매칭 실패해 fallback(Pretendard)으로 떨어짐. */
+@font-face {
+  font-family: "Cafe24Ssurround";
+  src: url("https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/Cafe24Ssurround.woff") format("woff");
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-deep: var(--deep);
+  --color-deep-soft: var(--deep-soft);
+  --color-deep-border: var(--deep-border);
   --font-sans: var(--font-pretendard);
+  --font-display: "Cafe24Ssurround", var(--font-pretendard), sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -56,10 +70,14 @@
 }
 
 /* 냥멍일기 톤 — Mocha Mousse(Pantone 2025) + Peach Fuzz(Pantone 2024) 어스톤.
+   v2(2026-05-05): 풀스크린 매거진 풍 — deep tone 색블록 섹션 추가, radius 1rem→0.5rem.
    다크모드 토큰 미포함 — MVP 라이트만. */
 :root {
   --background: #f4ece1;
   --foreground: #2d2018;
+  --deep: #2d2018;           /* hero/풀블리드 deep section base */
+  --deep-soft: #3d2a1f;      /* 펫 row 교차 deep section (deep보다 한 톤 위) */
+  --deep-border: #5a3f2e;    /* deep section 안에서 사용할 border */
   --card: #fffaf3;
   --card-foreground: #2d2018;
   --popover: #fffaf3;
@@ -81,7 +99,7 @@
   --chart-3: #c4a98a;
   --chart-4: #8d7866;
   --chart-5: #2d2018;
-  --radius: 1rem;
+  --radius: 0.5rem;
   --sidebar: #ede2cf;
   --sidebar-foreground: #2d2018;
   --sidebar-primary: #946652;
@@ -118,4 +136,14 @@
   html {
     @apply font-sans;
   }
+}
+
+/* deep tone utilities — @theme inline의 --color-deep token이 일부 환경(Tailwind v4 + Turbopack)에서
+   utility 생성에 누락되는 이슈가 있어 명시적으로 정의. font-display도 동일. */
+@layer utilities {
+  .bg-deep { background-color: var(--deep); }
+  .bg-deep-soft { background-color: var(--deep-soft); }
+  .text-deep { color: var(--deep); }
+  .border-deep-border { border-color: var(--deep-border); }
+  .font-display { font-family: var(--font-display); }
 }

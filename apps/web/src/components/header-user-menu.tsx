@@ -45,10 +45,14 @@ export function HeaderUserMenu({ displayName, email }: HeaderUserMenuProps) {
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="outline" size="sm" disabled={signingOut} />
+            <Button
+              variant="outline"
+              disabled={signingOut}
+              className="h-10 px-4 text-base"
+            />
           }
         >
-          <span className="max-w-32 truncate">{displayName}</span>
+          <span className="max-w-40 truncate">{displayName}</span>
           <ChevronDownIcon data-icon="inline-end" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-48">
