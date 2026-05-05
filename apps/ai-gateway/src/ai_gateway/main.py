@@ -71,6 +71,18 @@ _TRACKED_NODES = {"analyze_image", "write_diary", "safety_check"}
 # OpenAI structured outputs는 항상 valid JSON prefix를 stream하므로 정규식으로 충분.
 _DIARY_TEXT_RE = re.compile(r'"diary_text"\s*:\s*"((?:[^"\\]|\\.)*)')
 
+# system 프롬프트의 honorific placeholder를 LLM이 본문에 그대로 베끼는 경우 안전망.
+# system.md 가드가 1차, 본 후처리가 2차. 빈 honorific은 처리 생략.
+_HONORIFIC_PLACEHOLDERS = ("{{ honorific }}", "{{honorific}}", "{honorific}")
+
+
+def _fix_honorific(text: str, honorific: str) -> str:
+    if not honorific:
+        return text
+    for pat in _HONORIFIC_PLACEHOLDERS:
+        text = text.replace(pat, honorific)
+    return text
+
 
 def _sse(event: dict[str, Any]) -> bytes:
     return f"data: {json.dumps(event, ensure_ascii=False)}\n\n".encode("utf-8")
@@ -93,6 +105,7 @@ def _extract_diary_text(buffer: str) -> str | None:
 async def _stream_graph(
     state: DiaryState, config: dict[str, Any]
 ) -> AsyncIterator[bytes]:
+    honorific = state["honorific"]
     accumulated = ""        # write_diary LLM 출력 누적 (tool_call args)
     last_partial = ""       # 직전 emit된 diary_text (변동 시에만 재emit)
     write_starts = 0        # write_diary node start 횟수 (≥2 → retry)
@@ -147,18 +160,24 @@ async def _stream_graph(
                     accumulated += content
 
                 partial = _extract_diary_text(accumulated)
-                if partial and partial != last_partial:
-                    last_partial = partial
-                    yield _sse(
-                        {"type": "diary_partial", "diary_text": partial}
-                    )
+                if partial:
+                    partial = _fix_honorific(partial, honorific)
+                    if partial != last_partial:
+                        last_partial = partial
+                        yield _sse(
+                            {"type": "diary_partial", "diary_text": partial}
+                        )
 
         if final_output:
             yield _sse(
                 {
                     "type": "result",
-                    "diary_text": final_output["diary_text"],
-                    "short_caption": final_output["short_caption"],
+                    "diary_text": _fix_honorific(
+                        final_output["diary_text"], honorific
+                    ),
+                    "short_caption": _fix_honorific(
+                        final_output["short_caption"], honorific
+                    ),
                     "mood_tag": final_output["mood_tag"],
                 }
             )

@@ -22,6 +22,18 @@ from ..state import DiaryState
 # write_diary 호출 max: 첫 호출 + retry 1회 = 2회.
 SAFETY_MAX_CALLS = 2
 
+# system 프롬프트의 honorific placeholder를 LLM이 본문에 그대로 베끼는 경우
+# 안전망. system.md 가드가 1차, write_diary 출력 후처리가 2차.
+_HONORIFIC_PLACEHOLDERS = ("{{ honorific }}", "{{honorific}}", "{honorific}")
+
+
+def _fix_honorific(text: str, honorific: str) -> str:
+    if not honorific:
+        return text
+    for pat in _HONORIFIC_PLACEHOLDERS:
+        text = text.replace(pat, honorific)
+    return text
+
 
 @lru_cache(maxsize=1)
 def _diary_llm() -> Any:
@@ -45,9 +57,10 @@ def write_diary(state: DiaryState) -> dict:
     result = _diary_llm().invoke(messages)
     assert isinstance(result, DiaryGenerationResult)
 
+    honorific = state["honorific"]
     return {
-        "diary_text": result.diary_text,
-        "short_caption": result.short_caption,
+        "diary_text": _fix_honorific(result.diary_text, honorific),
+        "short_caption": _fix_honorific(result.short_caption, honorific),
         "mood_tag": result.mood_tag,
         "safety_retry_count": state["safety_retry_count"] + 1,
     }
