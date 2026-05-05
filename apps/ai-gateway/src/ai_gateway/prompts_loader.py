@@ -1,8 +1,9 @@
 """prompt template 로드 + system/user 메시지 조립.
 
-system.md / user_template.md / tone_guide.md를 패키지 내 텍스트 자원으로 로드.
-species 정규화 후 tone_guide의 §0 공통 + §1/§2/§3 중 한 섹션을 system 메시지에
-inject. user 메시지는 모드(generate / regenerate ± feedback)에 따라 3 모드 블록 조립.
+system.md / user_template.md / tone_guide.md / vision_system.md를 패키지 내
+텍스트 자원으로 로드. species 정규화 후 tone_guide의 §0 공통 + §1/§2/§3 중 한
+섹션을 diary system 메시지에 inject. user 메시지는 모드(generate / regenerate
+± feedback)에 따라 3 모드 블록 조립. vision system은 별도 분석가용으로 짧게.
 """
 from importlib.resources import files
 from typing import Literal
@@ -15,6 +16,7 @@ _PROMPT_PKG = "ai_gateway.prompts.diary_v1"
 _SYSTEM_TMPL = files(_PROMPT_PKG).joinpath("system.md").read_text(encoding="utf-8")
 _USER_TMPL = files(_PROMPT_PKG).joinpath("user_template.md").read_text(encoding="utf-8")
 _TONE_GUIDE = files(_PROMPT_PKG).joinpath("tone_guide.md").read_text(encoding="utf-8")
+_VISION_SYSTEM_TMPL = files(_PROMPT_PKG).joinpath("vision_system.md").read_text(encoding="utf-8")
 
 
 SpeciesNorm = Literal["cat", "dog", "other"]
@@ -129,6 +131,15 @@ def build_system_message(state: DiaryState) -> str:
     )
 
 
+def build_vision_system_message(state: DiaryState) -> str:
+    """vision agent용 system. species/gender만 fill — 호칭·톤·키워드 책임 X."""
+    return (
+        _VISION_SYSTEM_TMPL
+        .replace("{{ species_raw }}", state["species"])
+        .replace("{{ gender }}", state["gender"])
+    )
+
+
 def build_user_message(state: DiaryState) -> str:
     """모드 A/B/C 중 1개 선택 후 placeholder fill."""
     if state["seq"] == 1:
@@ -141,6 +152,7 @@ def build_user_message(state: DiaryState) -> str:
     template = _USER_MODES[mode]
     filled = (
         template
+        .replace("{{ vision_description }}", state.get("vision_description") or "")
         .replace("{{ keywords }}", state["keywords"])
         .replace("{{ recent_diaries_block }}", _format_recent_diaries(state["recent_diaries"]))
     )

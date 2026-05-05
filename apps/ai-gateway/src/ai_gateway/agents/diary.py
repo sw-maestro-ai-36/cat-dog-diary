@@ -1,7 +1,11 @@
-"""Diary agent — 일기 작성 + safety_check.
+"""Diary agent — 텍스트 입력만으로 1인칭 일기 작성 + safety_check.
 
-기존 nodes.py를 모듈로 이동. 동작 변경 없음 (이미지 입력 + structured output
-+ safety retry 모두 그대로). vision agent 분리는 후속 step에서.
+write_diary는 이미지를 직접 받지 않는다. analyze_image가 채운
+state["vision_description"]를 user 프롬프트의 placeholder로 받아 작문한다.
+사진 토큰은 vision agent에서만 1회 소비.
+
+`safety_retry_count`는 이름 그대로 두지만 의미는 "write_diary 호출 횟수".
+violation 시 retry edge는 write_diary로만 돌아가며 vision은 재호출하지 않는다.
 """
 from functools import lru_cache
 from typing import Any
@@ -15,7 +19,7 @@ from ..contracts import DiaryGenerationResult
 from ..prompts_loader import build_system_message, build_user_message
 from ..state import DiaryState
 
-# 안전 호출 max: 첫 호출 + retry 1회 = 2회 (ADR-0005 본문).
+# write_diary 호출 max: 첫 호출 + retry 1회 = 2회.
 SAFETY_MAX_CALLS = 2
 
 
@@ -29,24 +33,13 @@ def _diary_llm() -> Any:
     ).with_structured_output(DiaryGenerationResult)
 
 
-def call_llm(state: DiaryState) -> dict:
+def write_diary(state: DiaryState) -> dict:
     system_text = build_system_message(state)
     user_text = build_user_message(state)
 
     messages = [
         SystemMessage(content=system_text),
-        HumanMessage(
-            content=[
-                {"type": "text", "text": user_text},
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": state["photo_signed_url"],
-                        "detail": "low",
-                    },
-                },
-            ]
-        ),
+        HumanMessage(content=user_text),
     ]
 
     result = _diary_llm().invoke(messages)
@@ -76,7 +69,7 @@ def safety_check(state: DiaryState) -> dict:
 
 
 def should_retry(state: DiaryState) -> str:
-    """conditional edge — violation && safety_retry_count < SAFETY_MAX_CALLS → retry."""
+    """conditional edge — violation && safety_retry_count < SAFETY_MAX_CALLS → write_diary."""
     if state["safety_violation"] and state["safety_retry_count"] < SAFETY_MAX_CALLS:
-        return "call_llm"
+        return "write_diary"
     return END
