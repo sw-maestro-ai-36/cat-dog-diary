@@ -249,7 +249,7 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
           </p>
         </div>
         {streamingText ? (
-          <div className="rounded-2xl border border-border/40 bg-muted/30 p-4 animate-in fade-in duration-200">
+          <div className="rounded-md border border-border/40 bg-muted/30 p-4 animate-in fade-in duration-200">
             <p className="whitespace-pre-wrap text-sm leading-relaxed">
               {streamingText}
               <span
@@ -267,19 +267,16 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
 
   if (step === "result" && result) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
         {previewUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={previewUrl}
-            alt={result.short_caption}
-            className="aspect-square w-full rounded-2xl border border-border/40 object-cover shadow-sm"
-          />
-        ) : null}
-
-        <div className="flex flex-col gap-2 rounded-2xl border border-border/40 bg-muted/30 p-4">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-background px-2.5 py-1 text-xs font-medium">
+          <div className="relative w-full overflow-hidden rounded-md shadow-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={previewUrl}
+              alt={result.short_caption}
+              className="aspect-square w-full object-cover"
+            />
+            <span className="absolute top-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-card/95 px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-sm">
               <span
                 className="size-1.5 rounded-full"
                 style={{ backgroundColor: MOOD_COLOR_VAR[result.mood_tag] }}
@@ -287,9 +284,14 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
               />
               {result.mood_tag}
             </span>
-            <span className="text-sm font-medium">{result.short_caption}</span>
           </div>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">
+        ) : null}
+
+        <div className="flex flex-col gap-3 rounded-md border border-border bg-card p-6">
+          <h2 className="font-display text-2xl leading-snug sm:text-3xl">
+            {result.short_caption}
+          </h2>
+          <p className="whitespace-pre-wrap text-base leading-relaxed text-foreground/90">
             {result.diary_text}
           </p>
         </div>
@@ -366,7 +368,7 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={cn(
-            "flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-border/40 bg-muted/30 transition-all hover:border-primary/40 hover:bg-muted/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30",
+            "flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border border-border/40 bg-muted/30 transition-all hover:border-primary/40 hover:bg-muted/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30",
             isDragging && "border-primary bg-primary/5 ring-2 ring-primary/30",
           )}
         >

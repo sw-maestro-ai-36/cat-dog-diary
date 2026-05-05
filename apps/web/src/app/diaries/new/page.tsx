@@ -3,18 +3,19 @@
 
 import { redirect } from "next/navigation";
 import type { Pet } from "@cat-dog-diary/shared-types";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { SiteHeader } from "@/components/site-header";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getUsageToday } from "@/lib/server/usage";
 import { NewDiaryClient } from "./new-diary-client";
 
 type Props = { searchParams: Promise<{ pet_id?: string }> };
+
+const HERO_DATE_FMT = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 
 export default async function NewDiaryPage({ searchParams }: Props) {
   const { pet_id } = await searchParams;
@@ -38,20 +39,38 @@ export default async function NewDiaryPage({ searchParams }: Props) {
   const usage = await getUsageToday(supabase);
   if (usage.new_remaining <= 0) redirect("/");
 
+  const heroDate = HERO_DATE_FMT.format(new Date()).replace(/\//g, ".");
+
   return (
     <main className="flex flex-1 flex-col">
-      <SiteHeader />
+      <SiteHeader newDiaryPetId={pet.id} />
 
-      <div className="mx-auto flex w-full max-w-2xl flex-1 items-start px-4 py-12 sm:px-6">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-xl">{pet.name}의 새 일기</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <NewDiaryClient pet={pet as Pet} initialNewRemaining={usage.new_remaining} />
-          </CardContent>
-        </Card>
-      </div>
+      {/* Hero 헤더 — deep 색블록 + 큰 display typography */}
+      <section className="bg-deep text-background px-6 py-16 sm:px-10 lg:py-20">
+        <div className="mx-auto max-w-[1600px]">
+          <div className="mb-5 flex items-center gap-3 text-xs tracking-[0.3em] text-accent uppercase">
+            <span className="h-px w-8 bg-accent" />
+            <span>New Diary · {heroDate}</span>
+          </div>
+          <h1
+            className="font-display text-5xl leading-[1.05] sm:text-6xl lg:text-7xl"
+            style={{ letterSpacing: "-0.02em" }}
+          >
+            {pet.name}의<br />
+            <span className="text-accent">오늘</span>을 기록할 시간
+          </h1>
+          <p className="mt-5 max-w-lg text-base leading-relaxed text-background/70 sm:text-lg">
+            사진 한 장과 키워드 한 줄. 1인칭 일기가 자동으로 완성돼요.
+          </p>
+        </div>
+      </section>
+
+      {/* 본문 — cream 폼/결과 영역 */}
+      <section className="bg-background text-foreground px-6 py-16 sm:px-10 lg:py-20 flex-1">
+        <div className="mx-auto w-full max-w-3xl">
+          <NewDiaryClient pet={pet as Pet} initialNewRemaining={usage.new_remaining} />
+        </div>
+      </section>
     </main>
   );
 }
