@@ -1,7 +1,7 @@
-"""LangGraph 노드 함수. ADR-0005 부록 정합.
+"""Diary agent — 일기 작성 + safety_check.
 
-흐름: prepare_context → call_llm → safety_check → (conditional) call_llm | END.
-TypedDict reducer는 overwrite — 노드는 변경할 필드만 dict로 return.
+기존 nodes.py를 모듈로 이동. 동작 변경 없음 (이미지 입력 + structured output
++ safety retry 모두 그대로). vision agent 분리는 후속 step에서.
 """
 from functools import lru_cache
 from typing import Any
@@ -10,28 +10,23 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END
 
-from .config import get_settings
-from .contracts import DiaryGenerationResult
-from .prompts_loader import build_system_message, build_user_message
-from .state import DiaryState
+from ..config import get_settings
+from ..contracts import DiaryGenerationResult
+from ..prompts_loader import build_system_message, build_user_message
+from ..state import DiaryState
 
 # 안전 호출 max: 첫 호출 + retry 1회 = 2회 (ADR-0005 본문).
 SAFETY_MAX_CALLS = 2
 
 
 @lru_cache(maxsize=1)
-def _structured_llm() -> Any:
+def _diary_llm() -> Any:
     """structured outputs로 DiaryGenerationResult 강제하는 ChatOpenAI singleton."""
     get_settings()  # OPENAI_API_KEY를 os.environ에 export 보장.
     return ChatOpenAI(
         model="gpt-4o-mini",
         temperature=0.7,
     ).with_structured_output(DiaryGenerationResult)
-
-
-def prepare_context(state: DiaryState) -> dict:
-    """Entry node. 입력 sanity 훅 — 현재는 noop (Pydantic 검증으로 충분)."""
-    return {}
 
 
 def call_llm(state: DiaryState) -> dict:
@@ -54,7 +49,7 @@ def call_llm(state: DiaryState) -> dict:
         ),
     ]
 
-    result = _structured_llm().invoke(messages)
+    result = _diary_llm().invoke(messages)
     assert isinstance(result, DiaryGenerationResult)
 
     return {

@@ -9,8 +9,13 @@ from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 
-from .nodes import call_llm, prepare_context, safety_check, should_retry
+from .agents.diary import call_llm, safety_check, should_retry
 from .state import DiaryState
+
+
+def prepare_context(state: DiaryState) -> dict:
+    """Entry node. 입력 sanity 훅 — 현재 noop (Pydantic 검증으로 충분)."""
+    return {}
 
 
 @lru_cache(maxsize=1)
