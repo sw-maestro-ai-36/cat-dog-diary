@@ -1,16 +1,17 @@
 // POST /api/diaries/regenerate — ADR-0008 §C regenerate.
 // session 검증 → seq 결정 → 재생성 한도 ≤3 → 펫 메타 fetch (snapshot 갱신) →
-// signed URL → 직전 generation diary_text → Gateway 호출 → INSERT.
+// signed URL → 직전 generation diary_text → Gateway SSE → mediator INSERT → meta.
 // usage_quotas 차감 X (재생성은 일일 한도와 무관 — ADR-0008 §카운트 정책).
 
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest } from "next/server";
 import type {
   GatewayRegenerateRequest,
-  RegenerateResponse,
+  StreamEvent,
 } from "@cat-dog-diary/shared-types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { errorResponse } from "@/lib/api/error";
-import { GatewayError, gatewayRegenerate } from "@/lib/server/gateway";
+import { GatewayError, gatewayStream } from "@/lib/server/gateway";
+import { mediateStream, sseResponse } from "@/lib/server/diary-stream";
 import { regenerateSchema } from "@/lib/validators/diary";
 
 const PHOTO_BUCKET = "pet-photos";
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
   if (recentErr) return errorResponse("INTERNAL_ERROR", recentErr.message);
   const recentDiaries = (recent ?? []).map((r) => r.diary_text as string);
 
-  // 5. Gateway 호출.
+  // 5. Gateway SSE stream 시작.
   const gatewayBody: GatewayRegenerateRequest = {
     session_id,
     seq: nextSeq,
@@ -118,9 +119,13 @@ export async function POST(request: NextRequest) {
     previous_diary_text: lastGen.diary_text as string,
     feedback,
   };
-  let gatewayResult;
+  let gatewayRes: Response;
   try {
-    gatewayResult = await gatewayRegenerate(gatewayBody, accessToken);
+    gatewayRes = await gatewayStream(
+      "/diary/regenerate",
+      gatewayBody,
+      accessToken,
+    );
   } catch (e) {
     if (e instanceof GatewayError) {
       return errorResponse("GATEWAY_ERROR", e.message);
@@ -131,34 +136,36 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 6. INSERT (snapshot 갱신 — 재생성 시 펫 메타가 바뀌었을 수도).
-  const { data: gen, error: genErr } = await supabase
-    .from("diary_generations")
-    .insert({
-      owner_id: user.id,
-      pet_id,
-      session_id,
-      seq: nextSeq,
-      photo_path,
-      keywords,
-      honorific_used: pet.honorific,
-      species_used: pet.species,
-      gender_used: pet.gender,
-      regen_feedback: feedback ?? null,
-      diary_text: gatewayResult.diary_text,
-      short_caption: gatewayResult.short_caption,
-      mood_tag: gatewayResult.mood_tag,
-    })
-    .select("id")
-    .single();
-  if (genErr) return errorResponse("INTERNAL_ERROR", genErr.message);
+  // 6. result 이벤트에서 INSERT (snapshot 갱신) → meta emit.
+  const stream = mediateStream(gatewayRes.body!, async (result): Promise<StreamEvent> => {
+    const { data: gen, error: genErr } = await supabase
+      .from("diary_generations")
+      .insert({
+        owner_id: user.id,
+        pet_id,
+        session_id,
+        seq: nextSeq,
+        photo_path,
+        keywords,
+        honorific_used: pet.honorific,
+        species_used: pet.species,
+        gender_used: pet.gender,
+        regen_feedback: feedback ?? null,
+        diary_text: result.diary_text,
+        short_caption: result.short_caption,
+        mood_tag: result.mood_tag,
+      })
+      .select("id")
+      .single();
+    if (genErr) return { type: "error", message: genErr.message };
 
-  const body: RegenerateResponse = {
-    generation_id: gen.id,
-    diary_text: gatewayResult.diary_text,
-    short_caption: gatewayResult.short_caption,
-    mood_tag: gatewayResult.mood_tag,
-    regenerate_remaining: 1 + REGEN_LIMIT - nextSeq,
-  };
-  return NextResponse.json(body, { status: 201 });
+    return {
+      type: "meta",
+      generation_id: gen.id,
+      session_id,
+      regenerate_remaining: 1 + REGEN_LIMIT - nextSeq,
+    };
+  });
+
+  return sseResponse(stream);
 }

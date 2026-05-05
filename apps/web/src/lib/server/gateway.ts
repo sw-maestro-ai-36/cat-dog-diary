@@ -1,12 +1,6 @@
 // BFF → AI Gateway 호출. ADR-0006: X-Internal-Secret + 사용자 JWT forward.
-// Gateway endpoint: POST /diary/generate, /diary/regenerate.
-
-import type {
-  GatewayGenerateRequest,
-  GatewayGenerateResponse,
-  GatewayRegenerateRequest,
-  GatewayRegenerateResponse,
-} from "@cat-dog-diary/shared-types";
+// Gateway endpoint: POST /diary/generate, /diary/regenerate (둘 다 SSE).
+// 응답 body는 ReadableStream — BFF가 mediateStream으로 client에 forward.
 
 export class GatewayError extends Error {
   constructor(
@@ -18,11 +12,11 @@ export class GatewayError extends Error {
   }
 }
 
-async function callGateway<TReq, TRes>(
-  path: string,
-  body: TReq,
+export async function gatewayStream(
+  path: "/diary/generate" | "/diary/regenerate",
+  body: unknown,
   accessToken: string,
-): Promise<TRes> {
+): Promise<Response> {
   const baseUrl = process.env.AI_GATEWAY_URL;
   const secret = process.env.INTERNAL_SHARED_SECRET;
   if (!baseUrl || !secret) {
@@ -58,19 +52,8 @@ async function callGateway<TReq, TRes>(
       res.status,
     );
   }
-  return (await res.json()) as TRes;
-}
-
-export function gatewayGenerate(
-  body: GatewayGenerateRequest,
-  accessToken: string,
-): Promise<GatewayGenerateResponse> {
-  return callGateway("/diary/generate", body, accessToken);
-}
-
-export function gatewayRegenerate(
-  body: GatewayRegenerateRequest,
-  accessToken: string,
-): Promise<GatewayRegenerateResponse> {
-  return callGateway("/diary/regenerate", body, accessToken);
+  if (!res.body) {
+    throw new GatewayError("Gateway response body 없음", 502);
+  }
+  return res;
 }

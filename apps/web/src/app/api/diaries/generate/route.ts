@@ -1,15 +1,16 @@
 // POST /api/diaries/generate — ADR-0008 §C generate.
 // 펫 메타 fetch → 한도 검증 → signed URL 발급 → recent_diaries fetch →
-// Gateway 호출 → diary_generations seq=1 INSERT → usage_quotas UPSERT.
+// Gateway SSE stream → mediator가 result 이벤트에서 INSERT/quota → meta 이벤트.
 
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest } from "next/server";
 import type {
   GatewayGenerateRequest,
-  GenerateResponse,
+  StreamEvent,
 } from "@cat-dog-diary/shared-types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { errorResponse } from "@/lib/api/error";
-import { GatewayError, gatewayGenerate } from "@/lib/server/gateway";
+import { GatewayError, gatewayStream } from "@/lib/server/gateway";
+import { mediateStream, sseResponse } from "@/lib/server/diary-stream";
 import { generateSchema } from "@/lib/validators/diary";
 
 const PHOTO_BUCKET = "pet-photos";
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
   if (recentErr) return errorResponse("INTERNAL_ERROR", recentErr.message);
   const recentDiaries = (recent ?? []).map((r) => r.diary_text as string);
 
-  // 6. Gateway 호출.
+  // 6. Gateway SSE stream 시작.
   const sessionId = crypto.randomUUID();
   const gatewayBody: GatewayGenerateRequest = {
     session_id: sessionId,
@@ -135,9 +136,9 @@ export async function POST(request: NextRequest) {
     gender: pet.gender,
     recent_diaries: recentDiaries,
   };
-  let gatewayResult;
+  let gatewayRes: Response;
   try {
-    gatewayResult = await gatewayGenerate(gatewayBody, accessToken);
+    gatewayRes = await gatewayStream("/diary/generate", gatewayBody, accessToken);
   } catch (e) {
     if (e instanceof GatewayError) {
       return errorResponse("GATEWAY_ERROR", e.message);
@@ -148,50 +149,51 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 7. diary_generations INSERT (snapshot 포함).
-  const { data: gen, error: genErr } = await supabase
-    .from("diary_generations")
-    .insert({
-      owner_id: user.id,
-      pet_id,
+  // 7. result 이벤트에서 INSERT + quota 차감 → meta emit.
+  const stream = mediateStream(gatewayRes.body!, async (result): Promise<StreamEvent> => {
+    const { data: gen, error: genErr } = await supabase
+      .from("diary_generations")
+      .insert({
+        owner_id: user.id,
+        pet_id,
+        session_id: sessionId,
+        seq: 1,
+        photo_path,
+        keywords,
+        honorific_used: pet.honorific,
+        species_used: pet.species,
+        gender_used: pet.gender,
+        regen_feedback: null,
+        diary_text: result.diary_text,
+        short_caption: result.short_caption,
+        mood_tag: result.mood_tag,
+      })
+      .select("id")
+      .single();
+    if (genErr) return { type: "error", message: genErr.message };
+
+    // usage_quotas 차감 (best-effort, 실패해도 meta는 정상 — ADR-0008).
+    if (quota) {
+      await supabase
+        .from("usage_quotas")
+        .update({ generations_count: currentCount + 1 })
+        .eq("quota_date", today);
+    } else {
+      await supabase.from("usage_quotas").insert({
+        owner_id: user.id,
+        quota_date: today,
+        generations_count: 1,
+      });
+    }
+
+    return {
+      type: "meta",
+      generation_id: gen.id,
       session_id: sessionId,
-      seq: 1,
-      photo_path,
-      keywords,
-      honorific_used: pet.honorific,
-      species_used: pet.species,
-      gender_used: pet.gender,
-      regen_feedback: null,
-      diary_text: gatewayResult.diary_text,
-      short_caption: gatewayResult.short_caption,
-      mood_tag: gatewayResult.mood_tag,
-    })
-    .select("id")
-    .single();
-  if (genErr) return errorResponse("INTERNAL_ERROR", genErr.message);
+      regenerate_remaining: 3,
+      today_new_remaining: Math.max(0, DAILY_NEW_LIMIT - (currentCount + 1)),
+    };
+  });
 
-  // 8. usage_quotas 차감 (best-effort, 실패해도 응답은 정상 — ADR-0008).
-  if (quota) {
-    await supabase
-      .from("usage_quotas")
-      .update({ generations_count: currentCount + 1 })
-      .eq("quota_date", today);
-  } else {
-    await supabase.from("usage_quotas").insert({
-      owner_id: user.id,
-      quota_date: today,
-      generations_count: 1,
-    });
-  }
-
-  const body: GenerateResponse = {
-    session_id: sessionId,
-    generation_id: gen.id,
-    diary_text: gatewayResult.diary_text,
-    short_caption: gatewayResult.short_caption,
-    mood_tag: gatewayResult.mood_tag,
-    regenerate_remaining: 3,
-    today_new_remaining: Math.max(0, DAILY_NEW_LIMIT - (currentCount + 1)),
-  };
-  return NextResponse.json(body, { status: 201 });
+  return sseResponse(stream);
 }
