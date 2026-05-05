@@ -11,6 +11,7 @@ import {
   adoptDiary,
   generateDiary,
   regenerateDiary,
+  type DiaryStreamCallbacks,
 } from "@/lib/api/diaries";
 import {
   ALLOWED_MIME,
@@ -22,6 +23,20 @@ import { MOOD_COLOR_VAR } from "@/lib/mood";
 import { cn } from "@/lib/utils";
 
 type Step = "input" | "loading" | "result";
+type StreamPhase =
+  | "preparing"
+  | "analyzing_image"
+  | "writing"
+  | "safety"
+  | "retrying";
+
+const PHASE_MESSAGE: Record<StreamPhase, string> = {
+  preparing: "준비 중...",
+  analyzing_image: "사진을 보고 있어요",
+  writing: "일기를 쓰고 있어요",
+  safety: "마지막으로 다듬는 중...",
+  retrying: "다시 쓰고 있어요",
+};
 
 interface ResultState {
   session_id: string;
@@ -49,6 +64,22 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
   const [showFeedback, setShowFeedback] = useState(false);
   const [adopting, setAdopting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [streamPhase, setStreamPhase] = useState<StreamPhase>("preparing");
+  const [streamingText, setStreamingText] = useState("");
+
+  const streamCallbacks: DiaryStreamCallbacks = {
+    onNode: (node, phase) => {
+      if (phase !== "start") return;
+      if (node === "analyze_image") setStreamPhase("analyzing_image");
+      else if (node === "write_diary") setStreamPhase("writing");
+      else if (node === "safety_check") setStreamPhase("safety");
+    },
+    onPartial: (text) => setStreamingText(text),
+    onRetry: () => {
+      setStreamPhase("retrying");
+      setStreamingText("");
+    },
+  };
 
   useEffect(() => {
     if (!previewUrl) return;
@@ -103,15 +134,20 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
       toast.error("키워드는 1~1000자로 입력해주세요");
       return;
     }
+    setStreamPhase("preparing");
+    setStreamingText("");
     setStep("loading");
     try {
       const path = await uploadPetPhoto(file);
       setPhotoPath(path);
-      const res = await generateDiary({
-        pet_id: pet.id,
-        photo_path: path,
-        keywords: trimmed,
-      });
+      const res = await generateDiary(
+        {
+          pet_id: pet.id,
+          photo_path: path,
+          keywords: trimmed,
+        },
+        streamCallbacks,
+      );
       setResult({
         session_id: res.session_id,
         generation_id: res.generation_id,
@@ -140,15 +176,20 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
       toast.error("피드백은 500자 이하여야 해요");
       return;
     }
+    setStreamPhase("preparing");
+    setStreamingText("");
     setStep("loading");
     try {
-      const res = await regenerateDiary({
-        session_id: result.session_id,
-        pet_id: pet.id,
-        photo_path: photoPath,
-        keywords: keywords.trim(),
-        feedback: trimmedFb.length > 0 ? trimmedFb : undefined,
-      });
+      const res = await regenerateDiary(
+        {
+          session_id: result.session_id,
+          pet_id: pet.id,
+          photo_path: photoPath,
+          keywords: keywords.trim(),
+          feedback: trimmedFb.length > 0 ? trimmedFb : undefined,
+        },
+        streamCallbacks,
+      );
       setResult({
         ...result,
         generation_id: res.generation_id,
@@ -182,16 +223,25 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
 
   if (step === "loading") {
     return (
-      <div className="flex flex-col items-center gap-4 py-12 text-center">
-        <PawPrint
-          size={48}
-          weight="duotone"
-          className="animate-pulse text-primary"
-          aria-hidden
-        />
-        <p className="text-sm text-muted-foreground">
-          일기를 쓰고 있어요... 보통 8초 정도 걸려요.
-        </p>
+      <div className="flex flex-col gap-4 py-8">
+        <div className="flex items-center gap-3">
+          <PawPrint
+            size={32}
+            weight="duotone"
+            className="animate-pulse text-primary"
+            aria-hidden
+          />
+          <p className="text-sm text-muted-foreground">
+            {PHASE_MESSAGE[streamPhase]}
+          </p>
+        </div>
+        {streamingText ? (
+          <div className="rounded-2xl border border-border/40 bg-muted/30 p-4">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed">
+              {streamingText}
+            </p>
+          </div>
+        ) : null}
       </div>
     );
   }
