@@ -17,8 +17,8 @@ export function EmptyStateCard() {
           첫 반려동물을<br />
           <span className="text-accent">등록</span>해주세요
         </h1>
-        <p className="mt-6 max-w-md text-base leading-relaxed text-background/70 sm:text-lg">
-          이름·종·호칭만 알려주면 일기 시작 준비 끝.
+        <p className="mt-6 text-base leading-relaxed text-background/70 sm:text-lg">
+          이름·종·호칭만 알려주면 일기 시작 준비 끝.<br />
           사진 한 장과 키워드 한 줄로 1인칭 일기가 자동 생성돼요.
         </p>
         <Link
