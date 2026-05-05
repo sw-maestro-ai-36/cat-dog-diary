@@ -150,7 +150,8 @@ export async function POST(request: NextRequest) {
   }
 
   // 7. result 이벤트에서 INSERT + quota 차감 → meta emit.
-  const stream = mediateStream(gatewayRes.body!, async (result): Promise<StreamEvent> => {
+  // vision_description은 vision_done 이벤트로 mediator가 가로챈 값.
+  const stream = mediateStream(gatewayRes.body!, async (result, vision): Promise<StreamEvent> => {
     const { data: gen, error: genErr } = await supabase
       .from("diary_generations")
       .insert({
@@ -167,6 +168,7 @@ export async function POST(request: NextRequest) {
         diary_text: result.diary_text,
         short_caption: result.short_caption,
         mood_tag: result.mood_tag,
+        vision_description: vision,
       })
       .select("id")
       .single();

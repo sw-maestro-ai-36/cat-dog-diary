@@ -87,6 +87,9 @@ async function consumeDiaryStream(
         case "error":
           streamError = event.message;
           break;
+        case "vision_done":
+          // BFF mediator가 가로채므로 클라이언트엔 도달 안 함. type-exhaustive용.
+          break;
       }
     }
   }

@@ -61,10 +61,11 @@ export async function POST(request: NextRequest) {
     return errorResponse("PET_DELETED", "삭제된 펫에는 일기를 만들 수 없습니다");
   }
 
-  // 2. 같은 session의 최신 generation 조회 → seq 결정 + previous_diary_text.
+  // 2. 같은 session의 최신 generation 조회 → seq 결정 + previous_diary_text +
+  //    vision_description echo (있으면 gateway가 vision LLM 호출 skip).
   const { data: lastGen, error: lastErr } = await supabase
     .from("diary_generations")
-    .select("seq, diary_text, pet_id")
+    .select("seq, diary_text, pet_id, vision_description")
     .eq("session_id", session_id)
     .order("seq", { ascending: false })
     .limit(1)
@@ -106,6 +107,8 @@ export async function POST(request: NextRequest) {
   const recentDiaries = (recent ?? []).map((r) => r.diary_text as string);
 
   // 5. Gateway SSE stream 시작.
+  // vision_description forward — null 아니면 gateway가 analyze_image skip.
+  const forwardedVision = (lastGen.vision_description as string | null) ?? undefined;
   const gatewayBody: GatewayRegenerateRequest = {
     session_id,
     seq: nextSeq,
@@ -118,6 +121,7 @@ export async function POST(request: NextRequest) {
     recent_diaries: recentDiaries,
     previous_diary_text: lastGen.diary_text as string,
     feedback,
+    vision_description: forwardedVision,
   };
   let gatewayRes: Response;
   try {
@@ -136,8 +140,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 6. result 이벤트에서 INSERT (snapshot 갱신) → meta emit.
-  const stream = mediateStream(gatewayRes.body!, async (result): Promise<StreamEvent> => {
+  // 6. result 이벤트에서 INSERT (snapshot 갱신 + vision echo) → meta emit.
+  // skip된 경우 vision은 null 들어옴 → forward한 값 echo.
+  // 새로 호출된 경우(NULL fallback) vision_done 받은 새 값 사용.
+  const stream = mediateStream(gatewayRes.body!, async (result, vision): Promise<StreamEvent> => {
+    const visionToStore = vision ?? forwardedVision ?? null;
     const { data: gen, error: genErr } = await supabase
       .from("diary_generations")
       .insert({
@@ -154,6 +161,7 @@ export async function POST(request: NextRequest) {
         diary_text: result.diary_text,
         short_caption: result.short_caption,
         mood_tag: result.mood_tag,
+        vision_description: visionToStore,
       })
       .select("id")
       .single();

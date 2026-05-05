@@ -14,6 +14,7 @@ type ResultPayload = Pick<
 
 export type ResultEventHandler = (
   result: ResultPayload,
+  visionDescription: string | null,
 ) => Promise<StreamEvent>; // meta 또는 error
 
 export function mediateStream(
@@ -27,6 +28,7 @@ export function mediateStream(
       const reader = upstream.getReader();
       let buffer = "";
       let resultPayload: ResultPayload | null = null;
+      let visionDescription: string | null = null;
 
       function emit(event: StreamEvent) {
         controller.enqueue(
@@ -58,7 +60,13 @@ export function mediateStream(
               continue; // malformed line은 drop
             }
 
-            // 클라이언트로 그대로 forward.
+            // vision_done은 graph 내부 정보 — BFF가 가로채고 forward 안 함.
+            if (event.type === "vision_done") {
+              visionDescription = event.vision_description;
+              continue;
+            }
+
+            // 그 외 모든 event는 클라이언트로 forward.
             emit(event);
 
             if (event.type === "result") {
@@ -72,7 +80,7 @@ export function mediateStream(
         }
 
         if (resultPayload) {
-          const meta = await onResult(resultPayload);
+          const meta = await onResult(resultPayload, visionDescription);
           emit(meta);
         }
       } catch (e) {
