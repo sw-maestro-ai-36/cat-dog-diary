@@ -48,6 +48,7 @@ def _initial_state(
         "recent_diaries": req.recent_diaries,
         "previous_diary_text": req.previous_diary_text if is_regen else None,
         "regen_feedback": req.feedback if is_regen else None,
+        "vision_description": None,
         "diary_text": None,
         "short_caption": None,
         "mood_tag": None,

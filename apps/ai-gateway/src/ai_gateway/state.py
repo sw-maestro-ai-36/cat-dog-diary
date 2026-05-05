@@ -28,7 +28,10 @@ class DiaryState(TypedDict):
     previous_diary_text: Optional[str]
     regen_feedback: Optional[str]
 
-    # 출력 (call_llm 노드가 채움)
+    # vision agent 산출 (analyze_image 노드가 채움, write_diary가 읽음)
+    vision_description: Optional[str]
+
+    # 출력 (write_diary 노드가 채움)
     diary_text: Optional[str]
     short_caption: Optional[str]
     mood_tag: Optional[MoodTag]
