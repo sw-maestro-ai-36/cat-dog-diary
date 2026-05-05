@@ -119,8 +119,16 @@ async def _stream_graph(
             kind = event["event"]
             metadata = event.get("metadata") or {}
             node = metadata.get("langgraph_node")
+            # 같은 노드 안의 sub-runnable(예: with_structured_output wrapping)도
+            # 같은 langgraph_node metadata를 propagate해 on_chain_start가 다중 fire됨.
+            # 노드 자체의 chain start만 잡으려면 event["name"] == node도 매치.
+            is_node_chain = event.get("name") == node
 
-            if kind == "on_chain_start" and node in _TRACKED_NODES:
+            if (
+                kind == "on_chain_start"
+                and node in _TRACKED_NODES
+                and is_node_chain
+            ):
                 if node == "write_diary":
                     write_starts += 1
                     if write_starts >= 2:
@@ -131,7 +139,7 @@ async def _stream_graph(
 
             elif kind == "on_chain_end":
                 output = event["data"].get("output")
-                if node in _TRACKED_NODES:
+                if node in _TRACKED_NODES and is_node_chain:
                     yield _sse({"type": "node", "node": node, "phase": "end"})
                     # analyze_image 산출물(vision_description)을 BFF에 emit —
                     # BFF가 가로채서 DB에 echo. 클라이언트엔 forward 안 됨.
