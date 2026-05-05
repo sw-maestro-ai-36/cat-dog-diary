@@ -14,24 +14,16 @@ export async function SiteHeader() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [{ data: profileData }, { data: petsData }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", user.id)
-      .maybeSingle(),
-    supabase
-      .from("pets")
-      .select("id")
-      .order("created_at", { ascending: true })
-      .limit(1),
-  ]);
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .maybeSingle();
 
   const displayName =
     (profileData as { display_name?: string } | null)?.display_name ??
     user.email ??
     "사용자";
-  const firstPetId = (petsData as { id: string }[] | null)?.[0]?.id;
 
   return (
     <header className="w-full border-b border-border/40 bg-card/70">
@@ -56,18 +48,6 @@ export async function SiteHeader() {
           <NavLink href="/" matchPath="/">
             메인
           </NavLink>
-          {firstPetId ? (
-            <NavLink
-              href={{
-                pathname: "/diaries/new",
-                query: { pet_id: firstPetId },
-              }}
-              matchPath="/diaries/new"
-              matchType="startsWith"
-            >
-              새 일기
-            </NavLink>
-          ) : null}
           <NavLink href="/pets/new" matchPath="/pets/new">
             새 펫
           </NavLink>

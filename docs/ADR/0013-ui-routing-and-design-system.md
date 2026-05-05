@@ -174,8 +174,9 @@ ADR-0006~0012로 백엔드·데이터·인프라 결정 완료. 프론트엔드 
 
 ### 헤더 — 통합 + 활성 표시
 
-- `SiteHeader` = async server component → user/profile/첫 펫 자체 fetch → 호출 측 `<SiteHeader />` 한 줄로 모든 페이지 동일
-- nav 3개: **메인 / 새 일기 / 새 펫**. `NavLink`(client)가 `usePathname`으로 활성 비교, 활성 nav `font-bold + text-foreground`
+- `SiteHeader` = async server component → user/profile 자체 fetch → 호출 측 `<SiteHeader />` 한 줄로 모든 페이지 동일
+- nav 2개: **메인 / 새 펫**. `NavLink`(client)가 `usePathname`으로 활성 비교, 활성 nav `font-bold + text-foreground`
+- "새 일기"는 헤더 nav에 두지 않음 — 본문 §일기 추가 진입대로 **펫 row 좌측 끝 `+` 카드**가 유일 진입(`pet_id` 컨텍스트 필수). 헤더 nav에 두면 다견 사용자에게 "어떤 펫인가" 모호함 발생
 - sticky 제거 — 스크롤과 같이 흘러감(사용자 선호)
 - `pets/new`를 server component로 변환 + `NewPetClient` 분리(인증 가드 추가)
 
