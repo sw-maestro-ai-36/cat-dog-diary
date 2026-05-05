@@ -106,12 +106,135 @@ flowchart LR
 - LangSmith trace config: `metadata={session_id, seq, owner_id_hash(SHA256[:16])}`, `tags=[seq:N]`, `run_name=diary_generate|diary_regenerate`
 - 응답은 SSE stream (`text/event-stream`). `analyze_image` 끝나면 `vision_done` event emit (BFF가 가로채서 DB echo, 클라이언트엔 forward 안 함). 최종 `result` event로 `DiaryGenerationResult` 3 필드 emit
 
-## 8. 관련 ADR
+## 8. SSE 이벤트 흐름 (Client ↔ BFF ↔ Gateway ↔ LLM ↔ DB)
+
+Gateway는 SSE StreamingResponse로 6종 이벤트를 emit하고 BFF가 mediator로 가공. 이벤트 union은 `packages/shared-types/src/stream.ts` 단일 진실 소스. 자세한 결정은 ADR-0008 부록·ADR-0011 부록(2026-05-05).
+
+### 8.1 generate (seq=1) — vision LLM 호출
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant B as BFF (Next.js)
+    participant G as Gateway (FastAPI)
+    participant LG as LangGraph
+    participant V as Vision LLM
+    participant D as Diary LLM
+    participant DB as Supabase
+
+    C->>B: POST /api/diaries/generate<br/>{ pet_id, photo_path, keywords }
+    B->>B: signed URL 발급, recent_diaries fetch,<br/>session_id UUID 발급
+    B->>G: POST /diary/generate (SSE)<br/>X-Internal-Secret + Bearer JWT
+
+    G->>LG: astream_events(state, v2)
+    Note over LG: prepare_context (noop)
+    Note over LG: _route_vision:<br/>vision_description == None → analyze_image
+
+    LG->>V: analyze_image<br/>(vision_system.md + image_url)
+    V-->>LG: VisionAnalysis(description)
+    G-->>B: SSE: node(analyze_image, end)<br/>SSE: vision_done
+    B->>B: closure에 vision_description 보관<br/>(클라이언트 forward X)
+
+    LG->>D: write_diary<br/>(system.md + user A 모드)
+    loop tool_call_chunks
+        D-->>LG: stream chunk
+        G-->>B: SSE: diary_partial (누적 diary_text)
+        B-->>C: SSE: diary_partial
+    end
+
+    Note over LG: safety_check (honorific + 길이)
+    Note over LG: should_retry: ok → END
+    G-->>B: SSE: result<br/>{ diary_text, short_caption, mood_tag }
+
+    B->>DB: INSERT diary_generations<br/>(seq=1, vision_description echo)
+    B->>DB: UPSERT usage_quotas (count++)
+    B-->>C: SSE: meta<br/>{ generation_id, session_id, regenerate_remaining,<br/>today_new_remaining }
+```
+
+### 8.2 regenerate (seq≥2) — vision LLM **skip**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant B as BFF
+    participant G as Gateway
+    participant LG as LangGraph
+    participant D as Diary LLM
+    participant DB as Supabase
+
+    C->>B: POST /api/diaries/regenerate<br/>{ session_id, pet_id, photo_path, feedback? }
+    B->>DB: SELECT lastGen<br/>(vision_description, previous_diary_text)
+    DB-->>B: lastGen row
+    B->>G: POST /diary/regenerate (SSE)<br/>+ vision_description forward
+
+    G->>LG: astream_events(state, v2)
+    Note over LG: prepare_context (noop)
+    Note over LG: _route_vision:<br/>vision_description ≠ None → write_diary (vision SKIP)
+
+    LG->>D: write_diary<br/>(B/C 모드, previous_diary_text + feedback?)
+    loop tool_call_chunks
+        D-->>LG: stream chunk
+        G-->>B: SSE: diary_partial
+        B-->>C: SSE: diary_partial
+    end
+
+    Note over LG: safety_check + should_retry
+    G-->>B: SSE: result
+    B->>DB: INSERT diary_generations<br/>(seq=N, vision_description echo from lastGen)
+    B-->>C: SSE: meta
+```
+
+> 효과: regenerate 호출당 vision LLM 1회 절감, 응답 시간 ≈6초 단축. legacy row(`vision_description IS NULL`)는 다음 regenerate에서 self-heal.
+
+### 8.3 safety retry 1회 (write_diary 본문 reset)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant LG as LangGraph
+    participant D as Diary LLM
+    participant G as Gateway
+    participant B as BFF
+    participant C as Client
+
+    LG->>D: write_diary (1차)
+    D-->>LG: result (예: honorific 누락)
+    Note over LG: safety_check → violation<br/>should_retry: count(1) < 2 → write_diary
+    G-->>B: SSE: retry { reason: "safety_violation" }
+    B-->>C: SSE: retry — 본문 reset, "다시 쓰고 있어요" 라벨
+    LG->>D: write_diary (2차, retry)
+    D-->>LG: result (정상)
+    Note over LG: safety_check → ok → END
+    G-->>B: SSE: result
+    B-->>C: SSE: result + meta
+```
+
+> `retry` 이벤트는 `write_diary` node start가 2번째일 때만 emit (false trigger 방지: `event["name"] == "write_diary"` 조건으로 sub-runnable propagation 무시).
+
+## 9. 이벤트 union (실측)
+
+| type | 발신자 | 의미 |
+|---|---|---|
+| `node` | gateway | graph 노드 시작/종료 (UI 라벨 전환) |
+| `vision_done` | gateway | analyze_image 산출. **BFF 종결**, 클라이언트 미수신 |
+| `diary_partial` | gateway | write_diary 누적 diary_text (매번 전체) |
+| `retry` | gateway | safety violation → 본문 reset |
+| `result` | gateway | 최종 산출 (text/caption/mood) |
+| `meta` | BFF | INSERT 후 generation_id/session_id/카운터 |
+| `error` | gateway/BFF | 종료 신호 |
+
+클라이언트는 `meta`까지 받아야 generation 확정 (없으면 INSERT 실패 ⇒ 채택/재생성 차단).
+
+## 10. 관련 ADR
 
 - ADR-0003: 모델 선택 (gpt-4o-mini Vision)
-- ADR-0005: graph 토폴로지 + state schema (부록 — vision/diary 분리 후 갱신 필요)
+- ADR-0005: graph 토폴로지 + state schema (부록 v2 2026-05-05 — vision/diary 분리 + skip 분기)
 - ADR-0006: 보안 경계 (`X-Internal-Secret` + Bearer JWT)
-- ADR-0010: DB CHECK 길이 제약
-- ADR-0011: endpoint 시그니처 + 환경변수
+- ADR-0007: 영속화 모델 (vision 산출 echo 정책 포함)
+- ADR-0008: BFF API 표면 (부록 v2 — SSE + mediator 패턴)
+- ADR-0010: DB CHECK 길이 제약 (`vision_description` 컬럼 포함)
+- ADR-0011: endpoint 시그니처 + 환경변수 (부록 v2 — SSE + regenerate body `vision_description?`)
 - ADR-0012: LangSmith trace 메타 PII 회피
 - ADR-0013: 종 이모지/키워드 매핑
