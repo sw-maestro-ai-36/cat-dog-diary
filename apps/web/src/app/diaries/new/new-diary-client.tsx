@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PawPrint } from "@phosphor-icons/react/dist/ssr";
 import { toast } from "sonner";
@@ -23,20 +23,17 @@ import { MOOD_COLOR_VAR } from "@/lib/mood";
 import { cn } from "@/lib/utils";
 
 type Step = "input" | "loading" | "result";
-type StreamPhase =
-  | "preparing"
-  | "analyzing_image"
-  | "writing"
-  | "safety"
-  | "retrying";
+type StreamPhase = "preparing" | "analyzing_image" | "writing" | "retrying";
 
 const PHASE_MESSAGE: Record<StreamPhase, string> = {
   preparing: "준비 중...",
   analyzing_image: "사진을 보고 있어요",
   writing: "일기를 쓰고 있어요",
-  safety: "마지막으로 다듬는 중...",
   retrying: "다시 쓰고 있어요",
 };
+
+// retry 시 다음 write_diary 시작이 곧바로 phase를 덮어쓰지 않도록 잠깐 lock.
+const RETRY_LOCK_MS = 900;
 
 interface ResultState {
   session_id: string;
@@ -66,18 +63,31 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
   const [isDragging, setIsDragging] = useState(false);
   const [streamPhase, setStreamPhase] = useState<StreamPhase>("preparing");
   const [streamingText, setStreamingText] = useState("");
+  const retryLockRef = useRef(false);
 
   const streamCallbacks: DiaryStreamCallbacks = {
     onNode: (node, phase) => {
       if (phase !== "start") return;
+      // safety_check는 너무 짧아 라벨 바꿀 가치 없음 — "일기를 쓰고 있어요" 유지.
       if (node === "analyze_image") setStreamPhase("analyzing_image");
-      else if (node === "write_diary") setStreamPhase("writing");
-      else if (node === "safety_check") setStreamPhase("safety");
+      else if (node === "write_diary") {
+        // retry 직후 잠깐은 "다시 쓰고 있어요" 유지.
+        if (!retryLockRef.current) setStreamPhase("writing");
+      }
     },
-    onPartial: (text) => setStreamingText(text),
+    onPartial: (text) => {
+      // retry lock 동안 본문이 다시 차오르지 않게 — lock 해제 후부터 노출.
+      if (retryLockRef.current) return;
+      setStreamingText(text);
+    },
     onRetry: () => {
       setStreamPhase("retrying");
       setStreamingText("");
+      retryLockRef.current = true;
+      window.setTimeout(() => {
+        retryLockRef.current = false;
+        setStreamPhase("writing");
+      }, RETRY_LOCK_MS);
     },
   };
 
@@ -231,14 +241,23 @@ export function NewDiaryClient({ pet, initialNewRemaining }: NewDiaryClientProps
             className="animate-pulse text-primary"
             aria-hidden
           />
-          <p className="text-sm text-muted-foreground">
+          <p
+            key={streamPhase}
+            className="text-sm text-muted-foreground animate-in fade-in duration-200"
+          >
             {PHASE_MESSAGE[streamPhase]}
           </p>
         </div>
         {streamingText ? (
-          <div className="rounded-2xl border border-border/40 bg-muted/30 p-4">
+          <div className="rounded-2xl border border-border/40 bg-muted/30 p-4 animate-in fade-in duration-200">
             <p className="whitespace-pre-wrap text-sm leading-relaxed">
               {streamingText}
+              <span
+                aria-hidden
+                className="ml-0.5 inline-block w-[0.45em] -translate-y-[0.05em] animate-pulse text-primary"
+              >
+                ▋
+              </span>
             </p>
           </div>
         ) : null}
