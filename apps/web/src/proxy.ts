@@ -50,6 +50,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // 정적/이미지 자산 + favicon 제외, 그 외 모든 path.
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2|woff|otf|ttf)$).*)",
   ],
 };

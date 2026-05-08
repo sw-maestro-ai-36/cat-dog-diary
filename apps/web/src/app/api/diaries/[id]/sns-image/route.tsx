@@ -5,17 +5,14 @@
 // Satori(@vercel/og)가 woff2/otf의 글리프 path로 직접 그려 환경 무관 동일 PNG.
 
 import { ImageResponse } from "next/og";
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import type { MoodTag } from "@cat-dog-diary/shared-types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { errorResponse } from "@/lib/api/error";
 
-export const runtime = "nodejs";
+export const runtime = "edge";
 
 const PHOTO_BUCKET = "pet-photos";
 const SIGNED_URL_TTL = 60;
-const FONTS_DIR = path.join(process.cwd(), "src/app/fonts");
 
 const MOOD_COLOR: Record<MoodTag, string> = {
   행복: "#f5c870",
@@ -41,41 +38,41 @@ function diaryTextStyle(len: number) {
   return { fontSize: 22, lineHeight: 1.55 };
 }
 
-// 모듈-level 캐시 — 첫 호출만 IO. Vercel/Node 핫 인스턴스에서 유지.
+// 모듈-level 캐시 — 첫 호출만 fetch. Vercel/Node 핫 인스턴스에서 유지.
 let fontsCache: {
   regular: ArrayBuffer;
   bold: ArrayBuffer;
   cafe: ArrayBuffer;
 } | null = null;
 
-async function loadFonts() {
+async function loadFonts(origin: string) {
   if (fontsCache) return fontsCache;
   const [regular, bold, cafe] = await Promise.all([
-    fs.readFile(path.join(FONTS_DIR, "Pretendard-Regular.otf")),
-    fs.readFile(path.join(FONTS_DIR, "Pretendard-Bold.otf")),
-    fs.readFile(path.join(FONTS_DIR, "Cafe24Ssurround.woff")),
+    fetch(`${origin}/fonts/Pretendard-Regular.otf`).then((r) => r.arrayBuffer()),
+    fetch(`${origin}/fonts/Pretendard-Bold.otf`).then((r) => r.arrayBuffer()),
+    fetch(`${origin}/fonts/Cafe24Ssurround.woff`).then((r) => r.arrayBuffer()),
   ]);
-  fontsCache = {
-    regular: regular.buffer.slice(
-      regular.byteOffset,
-      regular.byteOffset + regular.byteLength,
-    ) as ArrayBuffer,
-    bold: bold.buffer.slice(
-      bold.byteOffset,
-      bold.byteOffset + bold.byteLength,
-    ) as ArrayBuffer,
-    cafe: cafe.buffer.slice(
-      cafe.byteOffset,
-      cafe.byteOffset + cafe.byteLength,
-    ) as ArrayBuffer,
-  };
+  fontsCache = { regular, bold, cafe };
   return fontsCache;
 }
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(_: Request, ctx: Ctx) {
+export async function GET(request: Request, ctx: Ctx) {
+  try {
+    return await handle(request, ctx);
+  } catch (err) {
+    console.error("[SNS image] error:", err);
+    return errorResponse(
+      "INTERNAL_ERROR",
+      err instanceof Error ? err.message : "이미지 생성 실패",
+    );
+  }
+}
+
+async function handle(request: Request, ctx: Ctx) {
   const { id } = await ctx.params;
+  const origin = new URL(request.url).origin;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -129,7 +126,7 @@ export async function GET(_: Request, ctx: Ctx) {
     photoArrayBuffer,
   ).toString("base64")}`;
 
-  const fonts = await loadFonts();
+  const fonts = await loadFonts(origin);
 
   const dateLabel = DATE_FMT.format(new Date(diary.created_at));
   const moodTag = diary.mood_tag as MoodTag;
@@ -247,6 +244,7 @@ export async function GET(_: Request, ctx: Ctx) {
           {/* caption */}
           <div
             style={{
+              display: "flex",
               fontFamily: "Cafe24Ssurround",
               fontSize: 56,
               lineHeight: 1.25,
@@ -260,6 +258,7 @@ export async function GET(_: Request, ctx: Ctx) {
           {/* diary body */}
           <div
             style={{
+              display: "flex",
               flex: 1,
               fontSize: ds.fontSize,
               lineHeight: ds.lineHeight,
