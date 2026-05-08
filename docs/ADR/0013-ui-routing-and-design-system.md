@@ -202,11 +202,14 @@ DESIGN.md §상세 화면의 "SNS 공유" 2차 기능을 활성화. 일기 카�
 | 레이아웃 | 사진 60% (1080×1152) + 텍스트 영역 40% (1080×768) |
 | 콘텐츠 | 사진(좌상단 펫 이름 칩) + mood pill + caption + diary_text + 날짜 + "🐾 냥멍일기" 워터마크 |
 | 렌더링 | **서버 렌더** — `GET /api/diaries/:id/sns-image` → `next/og` `ImageResponse` (Satori) → PNG |
+| Runtime | **Edge** (`export const runtime = "edge"`) — Next 16 + Turbopack + Node runtime 조합에서 jest worker가 retry 한도 초과로 crash하던 문제 회피 |
 | UX | 일기 상세 다이얼로그에서 view 전환(`detail` ↔ `sns-preview`) — 서버 fetch → 미리보기 → [SNS 공유] / [다운로드] |
 | 다운로드 | Web Share API (모바일 인스타/카톡 직접 공유) + `<a download>` (데스크톱·share 미지원 환경 fallback) |
 | 본문 폰트 | 글자수 구간별 (≤220자 30px / ≤320자 26px / ≤400자 22px) |
-| 폰트 자체 | Pretendard Regular/Bold(.otf, self-host) + Cafe24Ssurround(.woff, self-host) — Satori `fonts` 옵션으로 명시 로드, 글리프 path로 직접 그려 OS 무관 동일 |
+| 폰트 자체 | Pretendard Regular/Bold(.otf) + Cafe24Ssurround(.woff) self-host — `apps/web/public/fonts/`. Edge runtime에서 `fetch(${origin}/fonts/...)`로 로드 후 모듈-level 캐시. Satori `fonts` 옵션으로 명시 전달 → 글리프 path로 직접 그려 OS 무관 동일 |
 | 펫 이름 노출 | 서버 route handler에서 `pets` 별도 select (단일 일기 단일 호출이라 RLS·성능 부담 작음) |
+| 캐시 | `Cache-Control: private, max-age=3600, immutable` — 일기는 immutable이라 같은 일기 재호출은 브라우저 캐시(~0초) |
+| 동시성 | 폰트 fetch는 auth/DB 쿼리와 병렬 시작, `pets`/`diary_generations` 두 query는 `Promise.all`로 병렬 |
 | 파일명 | `냥멍일기-{YYYYMMDD}-{HHMMSS}.png` (다운로드 시점 로컬 시간) |
 
 ### Rationale
@@ -226,10 +229,12 @@ DESIGN.md §상세 화면의 "SNS 공유" 2차 기능을 활성화. 일기 카�
 ### Consequences / 후속
 
 - `DialogContent`에 `max-h-[90vh] overflow-y-auto` 동시 추가 — 작은 viewport에서 일기 상세 다이얼로그가 화면을 넘어가던 부수 문제 수정.
-- Route handler 추가: `apps/web/src/app/api/diaries/[id]/sns-image/route.tsx` (Node runtime, 폰트는 모듈-level 캐시 후 재사용).
-- 폰트 self-host: `apps/web/src/app/fonts/Pretendard-Regular.otf` + `Pretendard-Bold.otf` + `Cafe24Ssurround.woff` (각 ~1.5MB / 1.6MB / 400KB). git에 포함.
-- 응답 시간: 서버에서 photo signed URL fetch + base64 + Satori 렌더 = 클라이언트 캡처와 비슷한 1~2초 수준.
-- 미래 — 4:5(피드 세로) 옵션, 다중 일기 콜라주, 사용자 정의 워터마크 등은 별도 결정.
+- Route handler 추가: `apps/web/src/app/api/diaries/[id]/sns-image/route.tsx` (Edge runtime).
+- 폰트 self-host: `apps/web/public/fonts/Pretendard-Regular.otf` + `Pretendard-Bold.otf` + `Cafe24Ssurround.woff` (각 ~1.5MB / 1.6MB / 400KB). git에 포함. Edge runtime fetch로 로드 후 모듈-level 캐시.
+- `apps/web/src/proxy.ts` matcher에 `woff|otf|ttf` 추가 — 폰트 fetch가 인증 redirect에 막히지 않게 (기존 `woff2`만 있음).
+- 응답 시간: 첫 호출은 photo fetch + 폰트 fetch + Satori 렌더가 직렬 일부 + 병렬 일부로 ~1~2초. 두 번째 호출부터는 폰트 모듈 캐시 + 같은 일기면 브라우저 Cache-Control로 ~0초.
+- 미리보기 화면 우상단 "SNS 게시용 9:16" 안내 텍스트 제거 (사용자 피드백 — 비율 정보는 부록 등에 있고, 화면 자체로 자명).
+- 미래 — 4:5(피드 세로) 옵션, 다중 일기 콜라주, 사용자 정의 워터마크 등은 별도 결정. `vercel.json`에 edge region(`icn1` 등) 명시는 supabase 지역과 latency 감안 후 검토.
 
 ### 결정 변경 (2026-05-08)
 
