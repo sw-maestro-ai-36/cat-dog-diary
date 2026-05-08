@@ -73,6 +73,10 @@ export async function GET(request: Request, ctx: Ctx) {
 async function handle(request: Request, ctx: Ctx) {
   const { id } = await ctx.params;
   const origin = new URL(request.url).origin;
+
+  // 폰트 fetch는 DB 쿼리/photo fetch와 병렬 — auth 무관.
+  const fontsPromise = loadFonts(origin);
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -90,29 +94,27 @@ async function handle(request: Request, ctx: Ctx) {
   if (diaryErr) return errorResponse("INTERNAL_ERROR", diaryErr.message);
   if (!diary) return errorResponse("NOT_FOUND", "일기를 찾을 수 없어요");
 
-  // 펫 이름 (SNS 이미지 좌상단 칩에 표시).
-  const { data: pet } = await supabase
-    .from("pets")
-    .select("name")
-    .eq("id", diary.pet_id)
-    .maybeSingle();
-  const petName = pet?.name ?? "";
-
-  // photo_path는 diary_generations에서. listDiariesForPet과 동일 패턴.
-  const { data: gen, error: genErr } = await supabase
-    .from("diary_generations")
-    .select("photo_path")
-    .eq("id", diary.source_generation_id)
-    .maybeSingle();
-  if (genErr) return errorResponse("INTERNAL_ERROR", genErr.message);
-  if (!gen?.photo_path) {
+  // 펫 이름 + photo_path 병렬 fetch.
+  const [petResult, genResult] = await Promise.all([
+    supabase.from("pets").select("name").eq("id", diary.pet_id).maybeSingle(),
+    supabase
+      .from("diary_generations")
+      .select("photo_path")
+      .eq("id", diary.source_generation_id)
+      .maybeSingle(),
+  ]);
+  const petName = petResult.data?.name ?? "";
+  if (genResult.error) {
+    return errorResponse("INTERNAL_ERROR", genResult.error.message);
+  }
+  if (!genResult.data?.photo_path) {
     return errorResponse("NOT_FOUND", "사진을 찾을 수 없어요");
   }
 
   // 사진 fetch → base64 inline. Satori는 외부 URL fetch 가능하지만 base64가 더 안정적.
   const { data: signed } = await supabase.storage
     .from(PHOTO_BUCKET)
-    .createSignedUrl(gen.photo_path, SIGNED_URL_TTL);
+    .createSignedUrl(genResult.data.photo_path, SIGNED_URL_TTL);
   if (!signed?.signedUrl) {
     return errorResponse("INTERNAL_ERROR", "사진 URL 발급 실패");
   }
@@ -126,7 +128,8 @@ async function handle(request: Request, ctx: Ctx) {
     photoArrayBuffer,
   ).toString("base64")}`;
 
-  const fonts = await loadFonts(origin);
+  // 폰트는 위에서 시작한 fetch가 완료되었거나 DB 쿼리·photo fetch와 병렬 진행됨.
+  const fonts = await fontsPromise;
 
   const dateLabel = DATE_FMT.format(new Date(diary.created_at));
   const moodTag = diary.mood_tag as MoodTag;
@@ -293,6 +296,10 @@ async function handle(request: Request, ctx: Ctx) {
         { name: "Pretendard", data: fonts.bold, weight: 700 },
         { name: "Cafe24Ssurround", data: fonts.cafe, weight: 700 },
       ],
+      // 일기는 immutable이라 1시간 private cache. 같은 일기 재호출은 0초.
+      headers: {
+        "Cache-Control": "private, max-age=3600, immutable",
+      },
     },
   );
 }

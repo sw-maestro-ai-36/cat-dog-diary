@@ -246,7 +246,7 @@ export function DiaryDetailDialog({
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
+            <div>
               <Button
                 variant="ghost"
                 size="sm"
@@ -261,9 +261,6 @@ export function DiaryDetailDialog({
               >
                 ← 뒤로
               </Button>
-              <span className="text-xs text-muted-foreground">
-                SNS 게시용 9:16
-              </span>
             </div>
 
             <div className="flex min-h-[300px] items-center justify-center rounded-xl bg-muted/40 p-2">
