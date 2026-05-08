@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toBlob } from "html-to-image";
 import { toast } from "sonner";
 import type { Diary } from "@cat-dog-diary/shared-types";
 import { Button } from "@/components/ui/button";
@@ -12,13 +11,11 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { SnsImageCanvas } from "@/components/sns-image-canvas";
 import { deleteDiary } from "@/lib/api/diaries";
 import { MOOD_COLOR_VAR } from "@/lib/mood";
 
 interface DiaryDetailDialogProps {
   diary: Diary;
-  petName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -50,7 +47,6 @@ function generateFilename(): string {
 
 export function DiaryDetailDialog({
   diary,
-  petName,
   open,
   onOpenChange,
 }: DiaryDetailDialogProps) {
@@ -58,9 +54,8 @@ export function DiaryDetailDialog({
   const [view, setView] = useState<View>("detail");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [capturing, setCapturing] = useState(false);
+  const [fetching, setFetching] = useState(false);
   const [capture, setCapture] = useState<Capture | null>(null);
-  const canvasRef = useRef<HTMLDivElement | null>(null);
 
   const dateLabel = FULL_DATE_FMT.format(new Date(diary.created_at));
 
@@ -74,7 +69,7 @@ export function DiaryDetailDialog({
   }
 
   function handleOpenChange(o: boolean) {
-    if (deleting || capturing) return;
+    if (deleting || fetching) return;
     if (!o) resetAll();
     onOpenChange(o);
   }
@@ -93,30 +88,24 @@ export function DiaryDetailDialog({
     }
   }
 
-  // 'sns-preview' 진입 시 1회 캡처. canvas는 view 동안만 mount.
+  // 'sns-preview' 진입 시 서버에서 PNG fetch.
   useEffect(() => {
     if (view !== "sns-preview") return;
     let cancelled = false;
     let createdUrl: string | null = null;
 
     async function run() {
-      const node = canvasRef.current;
-      if (!node) return;
-      setCapturing(true);
+      setFetching(true);
       try {
-        if (typeof document !== "undefined" && "fonts" in document) {
-          await document.fonts.ready;
+        const res = await fetch(`/api/diaries/${diary.id}/sns-image`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(
+            body?.error?.message ?? `이미지 생성 실패 (${res.status})`,
+          );
         }
-        const blob = await toBlob(node, {
-          width: 1080,
-          height: 1920,
-          pixelRatio: 1,
-          cacheBust: false,
-          skipFonts: true,
-          backgroundColor: "#fffaf3",
-        });
+        const blob = await res.blob();
         if (cancelled) return;
-        if (!blob) throw new Error("blob 생성 실패");
         const url = URL.createObjectURL(blob);
         createdUrl = url;
         const file = new File([blob], generateFilename(), {
@@ -131,15 +120,13 @@ export function DiaryDetailDialog({
           setView("detail");
         }
       } finally {
-        if (!cancelled) setCapturing(false);
+        if (!cancelled) setFetching(false);
       }
     }
 
-    // canvas DOM이 commit되도록 한 tick 양보
-    const id = window.setTimeout(run, 0);
+    run();
     return () => {
       cancelled = true;
-      window.clearTimeout(id);
       if (createdUrl) URL.revokeObjectURL(createdUrl);
     };
   }, [view, diary.id]);
@@ -270,7 +257,7 @@ export function DiaryDetailDialog({
                   }
                   setView("detail");
                 }}
-                disabled={capturing}
+                disabled={fetching}
               >
                 ← 뒤로
               </Button>
@@ -280,7 +267,7 @@ export function DiaryDetailDialog({
             </div>
 
             <div className="flex min-h-[300px] items-center justify-center rounded-xl bg-muted/40 p-2">
-              {capturing || !capture ? (
+              {fetching || !capture ? (
                 <div className="flex flex-col items-center gap-2 py-12 text-sm text-muted-foreground">
                   <span className="size-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
                   이미지 만드는 중...
@@ -301,7 +288,7 @@ export function DiaryDetailDialog({
                   variant="default"
                   size="sm"
                   onClick={handleShare}
-                  disabled={capturing || !capture}
+                  disabled={fetching || !capture}
                   className="flex-1"
                 >
                   SNS 공유
@@ -311,7 +298,7 @@ export function DiaryDetailDialog({
                 variant={canShare ? "outline" : "default"}
                 size="sm"
                 onClick={handleDownload}
-                disabled={capturing || !capture}
+                disabled={fetching || !capture}
                 className="flex-1"
               >
                 다운로드
@@ -319,21 +306,6 @@ export function DiaryDetailDialog({
             </div>
           </div>
         )}
-
-        {/* off-screen 캡처 캔버스 — sns-preview view 동안만 mount */}
-        {view === "sns-preview" ? (
-          <div
-            aria-hidden
-            style={{
-              position: "fixed",
-              top: -99999,
-              left: -99999,
-              pointerEvents: "none",
-            }}
-          >
-            <SnsImageCanvas ref={canvasRef} diary={diary} petName={petName} />
-          </div>
-        ) : null}
       </DialogContent>
     </Dialog>
   );

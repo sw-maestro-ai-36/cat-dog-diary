@@ -192,38 +192,61 @@ ADR-0006~0012로 백엔드·데이터·인프라 결정 완료. 프론트엔드 
 
 DESIGN.md §상세 화면의 "SNS 공유" 2차 기능을 활성화. 일기 카드를 SNS(인스타 스토리/피드 등)에 공유 가능한 9:16 이미지로 export.
 
-### Decision
+> 본 부록은 2026-05-08에 클라이언트 캡처(`html-to-image`)로 1차 결정·구현했으나, 같은 날 OS별 폰트 fallback으로 인한 텍스트 시각 크기 차이(모바일/데스크탑)가 발견되어 **서버 렌더(`next/og` + Satori)로 결정 변경**. 변경 사유는 §결정 변경 (2026-05-08) 참조.
+
+### Decision (final)
 
 | 축 | 선택 |
 |---|---|
 | 비율 | **9:16 (1080×1920)** — Stories/Reels 표준 |
 | 레이아웃 | 사진 60% (1080×1152) + 텍스트 영역 40% (1080×768) |
 | 콘텐츠 | 사진(좌상단 펫 이름 칩) + mood pill + caption + diary_text + 날짜 + "🐾 냥멍일기" 워터마크 |
-| 렌더링 | **클라이언트 캡처** — `html-to-image`로 off-screen DOM → PNG Blob |
-| UX | 일기 상세 다이얼로그 안에서 view 전환(`detail` ↔ `sns-preview`) — 캡처 → 미리보기 → [SNS 공유] / [다운로드] |
+| 렌더링 | **서버 렌더** — `GET /api/diaries/:id/sns-image` → `next/og` `ImageResponse` (Satori) → PNG |
+| UX | 일기 상세 다이얼로그에서 view 전환(`detail` ↔ `sns-preview`) — 서버 fetch → 미리보기 → [SNS 공유] / [다운로드] |
 | 다운로드 | Web Share API (모바일 인스타/카톡 직접 공유) + `<a download>` (데스크톱·share 미지원 환경 fallback) |
-| 본문 폰트 | 글자수 구간별 자동 조정 (≤220자 30px / ≤320자 26px / ≤400자 22px) — 200~400자 모두 텍스트 영역에 fit |
-| 펫 이름 노출 | BFF/`Diary` 타입 변경 X — `PetRow → DiaryCard → DiaryDetailDialog` prop drilling |
+| 본문 폰트 | 글자수 구간별 (≤220자 30px / ≤320자 26px / ≤400자 22px) |
+| 폰트 자체 | Pretendard Regular/Bold(.otf, self-host) + Cafe24Ssurround(.woff, self-host) — Satori `fonts` 옵션으로 명시 로드, 글리프 path로 직접 그려 OS 무관 동일 |
+| 펫 이름 노출 | 서버 route handler에서 `pets` 별도 select (단일 일기 단일 호출이라 RLS·성능 부담 작음) |
 | 파일명 | `냥멍일기-{YYYYMMDD}-{HHMMSS}.png` (다운로드 시점 로컬 시간) |
 
 ### Rationale
 
-- **클라이언트 캡처**: 본 앱의 디자인 토큰(Tailwind v4 + CSS var)을 그대로 재사용 → 본 앱과 시각 100% 일치. 서버 렌더(@vercel/og·Satori)는 폰트/토큰 재구성 비용·콜드 스타트·BFF endpoint 추가 부담.
+- **서버 렌더**: 클라이언트 캡처는 디바이스 시스템 폰트로 fallback되어 OS별로 글리프가 달라짐(아래 §결정 변경 참조). Satori는 woff2/otf의 글리프 path를 직접 그려 환경 무관 byte-단위 동일 PNG 보장.
 - **9:16 단일**: 4:5(피드 세로) 옵션 분기는 사이드프로젝트 복잡도. 200~400자 일기는 9:16 텍스트 영역에서 자연스럽게 다 들어감.
 - **다이얼로그 view 전환**: 별도 다이얼로그 X (중첩 어색). 같은 다이얼로그에서 콘텐츠만 swap → 자연스러운 흐름.
 - **미리보기 단계**: Web Share API와 다운로드 두 옵션이 있어 사용자가 결과 보고 선택하는 단계가 자연스러움.
 
 ### Alternatives Considered
 
-- **서버 렌더(@vercel/og)** — 디자인 토큰 재구성, edge function 콜드 스타트, BFF endpoint 추가 부담.
+- **클라이언트 캡처(`html-to-image`)** — 1차 채택했다가 OS별 폰트 차이로 탈락 (§결정 변경 참조).
+- **HTML5 Canvas 직접 그리기** — 한국어 줄바꿈/keep-all/letter metric 직접 구현 부담 큼.
 - **즉시 다운로드 (미리보기 X)** — 공유/다운로드 분기를 위한 미리보기 단계가 더 자연.
-- **펫 이름을 BFF JOIN(`Diary.pet_name`)** — 이미 메인 페이지에 펫 객체가 있어 prop drilling이 더 단순. `Diary` 타입·BFF 무변경.
 - **mood pill에 이모지 추가(DESIGN.md §mood 매핑)** — 기존 카드(`diary-card.tsx`)는 dot+라벨이라 SNS 이미지만 이모지 추가하면 시각 일관성 깨짐. SNS 이미지에서도 dot+라벨 유지.
 
 ### Consequences / 후속
 
 - `DialogContent`에 `max-h-[90vh] overflow-y-auto` 동시 추가 — 작은 viewport에서 일기 상세 다이얼로그가 화면을 넘어가던 부수 문제 수정.
-- Supabase Storage signed URL의 CORS는 기본 통과(`Access-Control-Allow-Origin: *`)로 클라이언트 캡처 OK. 미통과 환경 발견 시 버킷 CORS 정책 추가 검토.
-- 의존성: `html-to-image` (web app dep, ~40KB).
-- 컴포넌트 추가: `apps/web/src/components/sns-image-canvas.tsx` (off-screen 캡처 캔버스, CSS module 분리). `DiaryDetailDialog`에 view state·캡처·공유/다운로드 로직.
+- Route handler 추가: `apps/web/src/app/api/diaries/[id]/sns-image/route.tsx` (Node runtime, 폰트는 모듈-level 캐시 후 재사용).
+- 폰트 self-host: `apps/web/src/app/fonts/Pretendard-Regular.otf` + `Pretendard-Bold.otf` + `Cafe24Ssurround.woff` (각 ~1.5MB / 1.6MB / 400KB). git에 포함.
+- 응답 시간: 서버에서 photo signed URL fetch + base64 + Satori 렌더 = 클라이언트 캡처와 비슷한 1~2초 수준.
 - 미래 — 4:5(피드 세로) 옵션, 다중 일기 콜라주, 사용자 정의 워터마크 등은 별도 결정.
+
+### 결정 변경 (2026-05-08)
+
+> 1차 결정(클라이언트 캡처)을 같은 날 서버 렌더로 변경.
+
+**문제 발견:** 같은 일기에 대해 모바일 웹과 데스크탑 웹에서 **출력 PNG의 텍스트 시각 크기가 다르게 나타남.** PNG 자체는 두 환경 모두 1080×1920 (비율 문제 X).
+
+**원인 진단:**
+1. `SnsImageCanvas`의 `font-family`는 시스템 폰트 fallback chain. 디바이스마다 fallback이 달라 (iOS=Apple SD Gothic Neo, Windows=Malgun Gothic, Android=Noto Sans CJK 등) 같은 `font-size:30px`도 글리프 metrics가 달라 시각 크기 차이.
+2. `next/font/local`로 self-host한 PretendardVariable을 `var(--font-pretendard)` 명시도 시도했으나, html-to-image의 SVG-to-image 변환 단계에서 SVG `<img>` 안 inline `@font-face`가 적용 안 됨 (브라우저 공통 한계).
+3. `getFontEmbedCSS`로 명시 호출 + `fontEmbedCSS` 옵션으로 woff2 base64(~3.3MB)를 SVG에 inject까지 시도했지만 결과 PNG 바이트는 여전히 동일 크기(180KB) — 폰트 데이터가 PNG 렌더에 사용되지 않음.
+
+**Decision:** 클라이언트 캡처 라이브러리(`html-to-image`)는 본질적으로 디바이스 폰트에 의존 → 서버 렌더로 전환. `next/og` `ImageResponse`는 Satori 기반으로 woff2/otf의 글리프 path를 직접 그리므로 환경 무관 byte-동일 PNG 보장.
+
+**제거된 것:**
+- `html-to-image` 의존성
+- `apps/web/src/components/sns-image-canvas.tsx` + CSS module
+- `PetRow → DiaryCard → DiaryDetailDialog`의 `petName` prop drilling (서버에서 직접 select)
+
+**검증:** 데스크탑·모바일 viewport에서 같은 일기 PNG의 SHA-256/byte 길이 일치 (Satori는 결정론적 렌더).

@@ -165,7 +165,7 @@ export function PetRow({
           variant={variant}
         />
         {diaries.map((d) => (
-          <DiaryCard key={d.id} diary={d} petName={pet.name} />
+          <DiaryCard key={d.id} diary={d} />
         ))}
       </div>
     </section>

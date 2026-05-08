@@ -7,7 +7,6 @@ import { MOOD_COLOR_VAR } from "@/lib/mood";
 
 interface DiaryCardProps {
   diary: Diary;
-  petName: string;
 }
 
 const DATE_FMT = new Intl.DateTimeFormat("ko-KR", {
@@ -16,7 +15,7 @@ const DATE_FMT = new Intl.DateTimeFormat("ko-KR", {
   day: "numeric",
 });
 
-export function DiaryCard({ diary, petName }: DiaryCardProps) {
+export function DiaryCard({ diary }: DiaryCardProps) {
   const [open, setOpen] = useState(false);
   const dateLabel = DATE_FMT.format(new Date(diary.created_at));
 
@@ -57,12 +56,7 @@ export function DiaryCard({ diary, petName }: DiaryCardProps) {
         </div>
       </button>
 
-      <DiaryDetailDialog
-        diary={diary}
-        petName={petName}
-        open={open}
-        onOpenChange={setOpen}
-      />
+      <DiaryDetailDialog diary={diary} open={open} onOpenChange={setOpen} />
     </>
   );
 }
