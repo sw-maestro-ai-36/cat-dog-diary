@@ -7,8 +7,10 @@
   display: flex;
   flex-direction: column;
   color: var(--foreground);
+  /* var(--font-pretendard)는 layout.tsx의 next/font/local로 self-host된 PretendardVariable.
+     OS별 폰트 fallback으로 인한 캡처 결과 차이를 방지. */
   font-family:
-    "Apple SD Gothic Neo", "Malgun Gothic", "Pretendard", system-ui,
+    var(--font-pretendard), "Apple SD Gothic Neo", "Malgun Gothic", system-ui,
     -apple-system, sans-serif;
   letter-spacing: -0.01em;
 }
@@ -89,7 +91,7 @@
 }
 
 .caption {
-  font-family: "Cafe24Ssurround", "Pretendard", sans-serif;
+  font-family: "Cafe24Ssurround", var(--font-pretendard), sans-serif;
   font-size: 56px;
   line-height: 1.25;
   color: var(--foreground);
