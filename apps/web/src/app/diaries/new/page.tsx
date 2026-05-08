@@ -67,7 +67,7 @@ export default async function NewDiaryPage({ searchParams }: Props) {
 
       {/* 본문 — cream 폼/결과 영역 */}
       <section className="bg-background text-foreground px-6 py-16 sm:px-10 lg:py-20 flex-1">
-        <div className="mx-auto w-full max-w-3xl">
+        <div className="mx-auto w-full max-w-xl">
           <NewDiaryClient pet={pet as Pet} initialNewRemaining={usage.new_remaining} />
         </div>
       </section>
