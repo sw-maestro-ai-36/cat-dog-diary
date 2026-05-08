@@ -159,10 +159,16 @@ export function DiaryDetailDialog({
     }
   }
 
-  const canShare =
-    typeof navigator !== "undefined" &&
-    !!capture &&
-    !!navigator.canShare?.({ files: [capture.file] });
+  // share files 지원 여부는 디바이스 capability — capture 결과와 무관하게 mount 시 한 번 결정.
+  // capture와 묶으면 로딩→완료 시점에 버튼 레이아웃이 바뀌어 어색.
+  const [supportsShareFiles, setSupportsShareFiles] = useState(false);
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.canShare) return;
+    const probe = new File([new Uint8Array(0)], "probe.png", {
+      type: "image/png",
+    });
+    setSupportsShareFiles(navigator.canShare({ files: [probe] }));
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -280,7 +286,7 @@ export function DiaryDetailDialog({
             </div>
 
             <div className="flex gap-2 border-t pt-3">
-              {canShare ? (
+              {supportsShareFiles ? (
                 <Button
                   variant="default"
                   size="sm"
@@ -292,7 +298,7 @@ export function DiaryDetailDialog({
                 </Button>
               ) : null}
               <Button
-                variant={canShare ? "outline" : "default"}
+                variant={supportsShareFiles ? "outline" : "default"}
                 size="sm"
                 onClick={handleDownload}
                 disabled={fetching || !capture}
