@@ -185,3 +185,45 @@ ADR-0006~0012로 백엔드·데이터·인프라 결정 완료. 프론트엔드 
 - 펫 사진 thumbnail 컬럼 도입(Phase β) 시 hero photo collage 빈 슬롯에 펫 사진 채우는 방향으로 자연 전환
 - 디자인 토큰 utility 생성이 Tailwind v4 + Turbopack에서 일부 누락되는 이슈는 `@layer utilities` 명시 정의로 우회. 향후 Tailwind 픽스되면 cleanup 가능 (`globals.css` `@layer utilities`의 `.bg-deep`, `.bg-deep-soft`, `.text-deep`, `.border-deep-border`, `.font-display`)
 - Tilted/perspective 카드 효과는 미차용 — 펫 일상 사진은 luxury frame과 톤 충돌
+
+---
+
+## 부록 — SNS 게시용 이미지 다운로드 (2026-05-08)
+
+DESIGN.md §상세 화면의 "SNS 공유" 2차 기능을 활성화. 일기 카드를 SNS(인스타 스토리/피드 등)에 공유 가능한 9:16 이미지로 export.
+
+### Decision
+
+| 축 | 선택 |
+|---|---|
+| 비율 | **9:16 (1080×1920)** — Stories/Reels 표준 |
+| 레이아웃 | 사진 60% (1080×1152) + 텍스트 영역 40% (1080×768) |
+| 콘텐츠 | 사진(좌상단 펫 이름 칩) + mood pill + caption + diary_text + 날짜 + "🐾 냥멍일기" 워터마크 |
+| 렌더링 | **클라이언트 캡처** — `html-to-image`로 off-screen DOM → PNG Blob |
+| UX | 일기 상세 다이얼로그 안에서 view 전환(`detail` ↔ `sns-preview`) — 캡처 → 미리보기 → [SNS 공유] / [다운로드] |
+| 다운로드 | Web Share API (모바일 인스타/카톡 직접 공유) + `<a download>` (데스크톱·share 미지원 환경 fallback) |
+| 본문 폰트 | 글자수 구간별 자동 조정 (≤220자 30px / ≤320자 26px / ≤400자 22px) — 200~400자 모두 텍스트 영역에 fit |
+| 펫 이름 노출 | BFF/`Diary` 타입 변경 X — `PetRow → DiaryCard → DiaryDetailDialog` prop drilling |
+| 파일명 | `냥멍일기-{YYYYMMDD}-{HHMMSS}.png` (다운로드 시점 로컬 시간) |
+
+### Rationale
+
+- **클라이언트 캡처**: 본 앱의 디자인 토큰(Tailwind v4 + CSS var)을 그대로 재사용 → 본 앱과 시각 100% 일치. 서버 렌더(@vercel/og·Satori)는 폰트/토큰 재구성 비용·콜드 스타트·BFF endpoint 추가 부담.
+- **9:16 단일**: 4:5(피드 세로) 옵션 분기는 사이드프로젝트 복잡도. 200~400자 일기는 9:16 텍스트 영역에서 자연스럽게 다 들어감.
+- **다이얼로그 view 전환**: 별도 다이얼로그 X (중첩 어색). 같은 다이얼로그에서 콘텐츠만 swap → 자연스러운 흐름.
+- **미리보기 단계**: Web Share API와 다운로드 두 옵션이 있어 사용자가 결과 보고 선택하는 단계가 자연스러움.
+
+### Alternatives Considered
+
+- **서버 렌더(@vercel/og)** — 디자인 토큰 재구성, edge function 콜드 스타트, BFF endpoint 추가 부담.
+- **즉시 다운로드 (미리보기 X)** — 공유/다운로드 분기를 위한 미리보기 단계가 더 자연.
+- **펫 이름을 BFF JOIN(`Diary.pet_name`)** — 이미 메인 페이지에 펫 객체가 있어 prop drilling이 더 단순. `Diary` 타입·BFF 무변경.
+- **mood pill에 이모지 추가(DESIGN.md §mood 매핑)** — 기존 카드(`diary-card.tsx`)는 dot+라벨이라 SNS 이미지만 이모지 추가하면 시각 일관성 깨짐. SNS 이미지에서도 dot+라벨 유지.
+
+### Consequences / 후속
+
+- `DialogContent`에 `max-h-[90vh] overflow-y-auto` 동시 추가 — 작은 viewport에서 일기 상세 다이얼로그가 화면을 넘어가던 부수 문제 수정.
+- Supabase Storage signed URL의 CORS는 기본 통과(`Access-Control-Allow-Origin: *`)로 클라이언트 캡처 OK. 미통과 환경 발견 시 버킷 CORS 정책 추가 검토.
+- 의존성: `html-to-image` (web app dep, ~40KB).
+- 컴포넌트 추가: `apps/web/src/components/sns-image-canvas.tsx` (off-screen 캡처 캔버스, CSS module 분리). `DiaryDetailDialog`에 view state·캡처·공유/다운로드 로직.
+- 미래 — 4:5(피드 세로) 옵션, 다중 일기 콜라주, 사용자 정의 워터마크 등은 별도 결정.
